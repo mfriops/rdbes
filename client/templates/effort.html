@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>File Upload</title>
+    </head>
+    <body>
+        <h1>Aggregated Commercial Effort (CE), submit</h1>
+        <form action = "/effort" method = "POST"
+            <br><br>
+            <input type = "submit" name = "input_button" value="Load" >
+            <input type = "submit" name = "input_button" value="Reload" >
+            <input type = "submit" name = "input_button" value="Save csv" >
+            <input type = "submit" name = "input_button" value="Save xlm" >
+
+            <br><br>
+            <p> Note: in the case that the Cruise record does not exists, it is created based on the following information:</p>
+            <input type="text" id="cruise" name="cruise" placeholder="Cruise name" class="form-control">
+            <input type="text" id="survey" name="survey" placeholder="Survey" class="form-control">
+            <input type="text" id="localid" name="localid" placeholder= "LocalId" class="form-control"><br>
+        </form>
+    </body>
+
+{% endblock %}

@@ -1,5 +1,6 @@
 #!/usr/local/bin/python3
 # coding: utf-8
+
 """
 RDBES Flask micro-service – Oracle edition (schema-aware)
 
@@ -41,7 +42,6 @@ from __future__ import annotations
 
 import os
 import oracledb                      # Oracle Python driver
-
 from typing import Any, Dict, List
 from datetime import datetime
 from flask import Flask, abort, jsonify, request
@@ -50,16 +50,15 @@ from sqlalchemy import (
     Table,
     create_engine,
     text,
-    String,
-    Integer,
     select,
 )
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import DeclarativeBase, sessionmaker, scoped_session
+from sqlalchemy.orm import sessionmaker, scoped_session
 
 from server.common.helper import to_dict, _payload_to_values, parse_int_list
 from server.common.geo import get_fao_area
 from server.common.fetch import fetch_one, fetch_many
+from models import Harbour
 
 # ---------------------------------------------------------------------------
 # Create Session
@@ -204,7 +203,7 @@ def get_area(lat: float, lon: float) -> str:
     with SessionLocal() as session:
         try:
             query = text("""
-                SELECT code FROM RDBES.area
+                SELECT code FROM rdbes.area
                  WHERE SDO_CONTAINS(
                     location,
                     SDO_GEOMETRY(
@@ -234,7 +233,7 @@ def get_metier(area_code: str, gear_type: str, target_assemblage: str, mesh_size
     with SessionLocal() as session:
         try:
             query = text("""
-                SELECT metier FROM RDBES.metier
+                SELECT metier FROM rdbes.metier
                  WHERE area_code  = :area_code
                    AND gear_type = :gear_type
                    AND target_assemblage = :target_assemblage
@@ -262,7 +261,7 @@ def health():
     """Liveness/readiness probe."""
     current_timestamp = datetime.now().isoformat()
     response = {
-        "RDBES-service Status": "200 OK",
+        "rdbes-service Status": "200 OK",
         "timestamp": current_timestamp
     }
 
@@ -398,4 +397,4 @@ for tbl_name in TABLES:
 
 # ───────────────────────────── entry-point ─────────────────────────────
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5042)))
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5047)))

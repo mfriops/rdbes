@@ -38,12 +38,10 @@ Dependencies
 from __future__ import annotations
 
 import os
-
 from datetime import datetime, time, date
 from flask import Flask, abort, jsonify, request
 from sqlalchemy import select, and_
 from server.common.session import get_session_local
-from server.common.helper import to_dict
 from server.services.adb.null import null_fishing_trip, null_fishing_station, null_trawl_and_seine_net
 from server.common.helper import to_dict, parse_int_list, parse_str_list
 from server.common.fetch import fetch_many
@@ -54,7 +52,6 @@ from models import FishingTrip, FishingStation, TrawlAndSeineNet, TargetAssembla
 # Create Session
 # ---------------------------------------------------------------------------
 SessionLocal = get_session_local()
-
 
 
 def fetch_one(model, filters: dict):

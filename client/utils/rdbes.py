@@ -1,14 +1,12 @@
-
+#!/usr/local/bin/python3
+# coding: utf-8
 
 from __future__ import annotations
 
 import re
-from typing import Iterable, Tuple, Protocol, runtime_checkable
-
 from shapely.geometry import Point
 from shapely.geometry.base import BaseGeometry
 from shapely.wkt import loads as wkt_loads
-
 from typing import Iterable, Protocol, runtime_checkable
 
 

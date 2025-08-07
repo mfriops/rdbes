@@ -1,3 +1,5 @@
+#!/usr/local/bin/python3
+# coding: utf-8
 
 null_landings = {
     "londun_id": None,

@@ -1,7 +1,7 @@
+#!/usr/local/bin/python3
+# coding: utf-8
 
-import os
 import pandas as pd
-from datetime import datetime
 from client.utils.geo import ices_statistical_rectangle
 
 class FishingOperation:

@@ -3,18 +3,7 @@
 
 from __future__ import annotations
 
-# import os
-# import oracledb  # Oracle driver for SQLAlchemy "oracledb" dialect
-#
-# from typing import Any, Dict
-# from datetime import datetime
-# from dotenv import load_dotenv
-# from flask import Flask, abort, jsonify, request
-# from sqlalchemy import Column, Float, Integer, Numeric, String, create_engine, select
-from sqlalchemy import select
-# from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
-
-# from utils.helper import to_dict, parse_int_list
+from sqlalchemy import select, and_
 from server.common.helper import to_dict
 
 # ---------------------------------------------------------------------------

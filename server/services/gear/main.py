@@ -38,11 +38,7 @@ Dependencies
 from __future__ import annotations
 
 import os
-import oracledb  # Oracle driver for SQLAlchemy "oracledb" dialect
-
-from typing import Any, Dict
 from datetime import datetime
-from dotenv import load_dotenv
 from flask import Flask, abort, jsonify, request
 
 from server.common.session import get_session_local

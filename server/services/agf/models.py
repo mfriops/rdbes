@@ -1,3 +1,5 @@
+#!/usr/local/bin/python3
+# coding: utf-8
 
 from sqlalchemy import Column, Integer, Numeric, String, DateTime, between
 from sqlalchemy.orm import DeclarativeBase

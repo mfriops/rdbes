@@ -3,8 +3,8 @@
 
 from __future__ import annotations
 
-from sqlalchemy import Column, Float, Integer, Numeric, String, create_engine, select
-from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy import Column, Integer, Numeric
+from sqlalchemy.orm import DeclarativeBase
 
 class Base(DeclarativeBase):
     """Declarative base class."""

@@ -17,20 +17,20 @@ from client.business.gear import GearBusiness
 from client.business.adb import AdbBusiness
 from client.business.agf import AgfBusiness
 
-from client.RDBES.design import Design
-from client.RDBES.fishing_trip import FishingTrip
-from client.RDBES.fishing_operation import FishingOperation
-from client.RDBES.species_selection import SpeciesSelection
-from client.RDBES.sample import Sample
-from client.RDBES.sampling_details import SamplingDetails
-from client.RDBES.vessel_details import VesselDetails
-from client.RDBES.individual_species import IndividualSpecies
-from client.RDBES.species_list import SpeciesList
-from client.RDBES.frequency_measure import FrequencyMeasure
-from client.RDBES.biological_variables import BiologicalVariables
-from client.RDBES.commercial_landing import CommercialLanding
-from client.RDBES.commercial_effort import CommercialEffort
-from client.RDBES.harbour import Harbour
+from client.rdbes.design import Design
+from client.rdbes.fishing_trip import FishingTrip
+from client.rdbes.fishing_operation import FishingOperation
+from client.rdbes.species_selection import SpeciesSelection
+from client.rdbes.sample import Sample
+from client.rdbes.sampling_details import SamplingDetails
+from client.rdbes.vessel_details import VesselDetails
+from client.rdbes.individual_species import IndividualSpecies
+from client.rdbes.species_list import SpeciesList
+from client.rdbes.frequency_measure import FrequencyMeasure
+from client.rdbes.biological_variables import BiologicalVariables
+from client.rdbes.commercial_landing import CommercialLanding
+from client.rdbes.commercial_effort import CommercialEffort
+from client.rdbes.harbour import Harbour
 
 from client.classes.channel.channel_station import ChannelStation
 from client.classes.channel.channel_sample import ChannelSample
@@ -51,7 +51,7 @@ from client.utils.misc import chunked
 
 class RdbesBusiness:
     """
-    Simple synchronous client for the Oracle-backed RDBES Flask service.
+    Simple synchronous client for the Oracle-backed rdbes Flask service.
 
     Parameters
     ----------
@@ -65,8 +65,11 @@ class RdbesBusiness:
     # ------------------------------------------------------------------ #
     # Public API                                                         #
     # ------------------------------------------------------------------ #
-    rdbes_url = os.environ.get("ORACLE_API_URL", "http://localhost:5042")
-    rdbes_service = RdbesService(rdbes_url)
+    # print(os.environ.get("RDBES_API_URL"))
+    # print(os.environ.get("RDBES_API_URL", "http://localhost:5047"))
+    rdbes_api_url = os.environ.get("API_GATEWAY_URL", "http://localhost:8001").rstrip("/")
+    rdbes_api_url = rdbes_api_url + '/' + os.environ.get("RDBES_API_GATEWAY", "rdbes").rstrip("/")
+    rdbes_service = RdbesService(rdbes_api_url)
 
     channel_business = ChannelBusiness()
     vessel_business = VesselBusiness()

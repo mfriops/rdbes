@@ -1,13 +1,16 @@
+#!/usr/local/bin/python3
+# coding: utf-8
 
 import pandas as pd
+from client.api.misc import get_country, get_organisation
 
 class SpeciesList:
     SLrecordType = 'SL'
 
     def __init__(self, species: dict):
         self.SLid = None
-        self.SLcountry = 'IS'
-        self.SLinstitute = '4766'
+        self.SLcountry = get_country()
+        self.SLinstitute = get_country()
         self.SLspeciesListName = species['name']
         self.SLyear = species['year']
         self.SLcatchFraction = 'Catch'

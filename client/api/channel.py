@@ -28,10 +28,8 @@ Usage
 from __future__ import annotations
 
 import os
-from typing import Any, Dict, Optional, Iterable, List, Sequence, Union
-
-import requests
-from requests import HTTPError, Response
+from requests import HTTPError, Response, Session
+from typing import Any, Dict, Optional, List, Sequence, Union
 
 
 class NotFound(Exception):
@@ -46,17 +44,19 @@ class ChannelService:
     ----------
     base_url :
         Root URL of the micro-service, *without* a trailing slash.
-        Can also be supplied via env-var ``RDBES_API_URL``.
+        Can also be supplied via env-var ``CHANNEL_API_URL``.
     timeout :
         Per-request timeout in seconds (default **10**).
     """
 
     def __init__(self, base_url: Optional[str] = None, timeout: int = 10) -> None:
-        self.base_url = (base_url or os.getenv("RDBES_API_URL") or "").rstrip("/")
+        # self.base_url = (base_url or os.getenv("API_GATEWAY_URL") or "").rstrip("/")
+        print(base_url)
+        self.base_url = base_url
         if not self.base_url:
-            raise ValueError("base_url not provided and RDBES_API_URL not set")
+            raise ValueError("base_url not provided and CHANNEL_API_URL not set")
         self.timeout = timeout
-        self._session = requests.Session()  # connection pooling
+        self._session = Session()  # connection pooling
 
     # ------------------------------------------------------------------ #
     # Public API                                                         #

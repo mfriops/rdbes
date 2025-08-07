@@ -24,8 +24,11 @@ class VesselBusiness:
     # Public API                                                         #
     # ------------------------------------------------------------------ #
 
-    vessel_url = os.environ.get("ORACLE_API_URL", "http://localhost:5044")
-    vessel_service = VesselService(vessel_url)
+    # vessel_url = os.environ.get("VESSEL_API_URL", "http://localhost:5044")
+    vessel_api_url = os.environ.get("API_GATEWAY_URL", "http://localhost:8001").rstrip("/")
+    vessel_api_url = vessel_api_url + '/' + os.environ.get("VESSEL_API_GATEWAY", "vessel").rstrip("/")
+    print(vessel_api_url)
+    vessel_service = VesselService(vessel_api_url)
 
     def health(self):
         return jsonify(self.vessel_service.health())

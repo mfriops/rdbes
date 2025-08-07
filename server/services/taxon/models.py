@@ -1,6 +1,8 @@
+#!/usr/local/bin/python3
+# coding: utf-8
 
-from sqlalchemy import Column, Float, Integer, Numeric, String, create_engine, select
-from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import DeclarativeBase
 
 
 # ---------------------------------------------------------------------------

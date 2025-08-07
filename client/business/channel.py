@@ -25,8 +25,10 @@ class ChannelBusiness:
     # Public API                                                         #
     # ------------------------------------------------------------------ #
 
-    channel_url = os.environ.get("ORACLE_API_URL", "http://localhost:5041")
-    channel_service = ChannelService(channel_url)
+    channel_api_url = os.environ.get("API_GATEWAY_URL", "http://localhost:8001").rstrip("/")
+    channel_api_url = channel_api_url + '/' + os.environ.get("CHANNEL_API_GATEWAY", "channel").rstrip("/")
+    print(channel_api_url)
+    channel_service = ChannelService(channel_api_url)
 
     def health(self):
         return jsonify(self.channel_service.health())

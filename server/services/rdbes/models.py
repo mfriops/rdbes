@@ -1,9 +1,11 @@
+#!/usr/local/bin/python3
+# coding: utf-8
 
 import os
 import oracledb                      # Oracle Python driver
-from typing import Any, Dict, List
-from sqlalchemy import Column, Float, Integer, Numeric, String, create_engine, select
-from sqlalchemy.orm import DeclarativeBase, sessionmaker, scoped_session
+from typing import Any, Dict
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import DeclarativeBase
 
 
 # ---------------------------------------------------------------------------

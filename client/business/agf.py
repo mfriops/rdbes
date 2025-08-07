@@ -24,8 +24,11 @@ class AgfBusiness:
     # Public API                                                         #
     # ------------------------------------------------------------------ #
 
-    landings_url = os.environ.get("ORACLE_API_URL", "http://localhost:5047")
-    agf_service = AgfService(landings_url)
+    # landings_url = os.environ.get("AGF_API_URL", "http://localhost:5045")
+    landing_api_url = os.environ.get("API_GATEWAY_URL", "http://localhost:8001").rstrip("/")
+    landing_api_url = landing_api_url + '/' + os.environ.get("AGF_API_GATEWAY", "agf").rstrip("/")
+    print(landing_api_url)
+    agf_service = AgfService(landing_api_url)
 
     def health(self):
         return jsonify(self.agf_service.health())

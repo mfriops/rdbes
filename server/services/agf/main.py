@@ -38,15 +38,13 @@ Dependencies
 from __future__ import annotations
 
 import os
-
 from datetime import datetime, time, date
 from flask import Flask, abort, jsonify, request
 from sqlalchemy import select, and_
+
 from server.common.session import get_session_local
-from server.common.helper import to_dict
 from server.services.agf.null import null_landings
-from server.common.helper import to_dict, parse_int_list, parse_str_list
-from server.common.fetch import fetch_many
+from server.common.helper import to_dict
 
 from models import Landings
 
@@ -171,4 +169,4 @@ def landings_endpoint():
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5047)))
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5045)))

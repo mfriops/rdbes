@@ -1,6 +1,8 @@
+#!/usr/local/bin/python3
+# coding: utf-8
 
 import pandas as pd
-from ..utils.rdbes import vessel_length_category
+from client.utils.rdbes import vessel_length_category
 
 class VesselDetails:
     VDrecordType = 'VD'

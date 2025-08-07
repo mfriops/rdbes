@@ -24,8 +24,11 @@ class AdbBusiness:
     # Public API                                                         #
     # ------------------------------------------------------------------ #
 
-    gear_url = os.environ.get("ORACLE_API_URL", "http://localhost:5046")
-    adb_service = AdbService(gear_url)
+    # gear_url = os.environ.get("ADB_API_URL", "http://localhost:5046")
+    adb_api_url = os.environ.get("API_GATEWAY_URL", "http://localhost:8001").rstrip("/")
+    adb_api_url = adb_api_url + '/' + os.environ.get("ADB_API_GATEWAY", "adb").rstrip("/")
+    print(adb_api_url)
+    adb_service = AdbService(adb_api_url)
 
     def health(self):
         return jsonify(self.adb_service.health())

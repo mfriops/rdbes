@@ -24,8 +24,11 @@ class GearBusiness:
     # Public API                                                         #
     # ------------------------------------------------------------------ #
 
-    gear_url = os.environ.get("ORACLE_API_URL", "http://localhost:5043")
-    gear_service = GearService(gear_url)
+    # gear_url = os.environ.get("GEAR_API_URL", "http://localhost:5043")
+    gear_api_url = os.environ.get("API_GATEWAY_URL", "http://localhost:8001").rstrip("/")
+    gear_api_url = gear_api_url + '/' + os.environ.get("GEAR_API_GATEWAY", "gear").rstrip("/")
+    print(gear_api_url)
+    gear_service = GearService(gear_api_url)
 
     def health(self):
         return jsonify(self.gear_service.health())

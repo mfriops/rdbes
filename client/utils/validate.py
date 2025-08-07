@@ -4,7 +4,6 @@
 import pandas as pd
 from client.utils.misc import haskey
 from client.utils.geo import haversine
-from client.utils.helper import parse_time
 
 
 def validate_acoustic(acousticDict: dict) -> dict:

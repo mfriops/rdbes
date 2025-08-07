@@ -1,8 +1,8 @@
 #!/usr/local/bin/python3
 # coding: utf-8
 
-from math import floor, copysign, trunc, radians, sin, cos, acos, sqrt, atan2, pi
 import geopandas as gpd
+from math import floor, copysign, trunc, radians, sin, cos, acos, sqrt, atan2, pi
 from shapely.geometry import Point
 
 

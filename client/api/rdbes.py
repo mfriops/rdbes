@@ -1,8 +1,8 @@
 #!/usr/local/bin/python3
 # coding: utf-8
 
-import requests
-from typing import Any, Dict, List, Set
+import os
+from requests import request
 from urllib.parse import urlencode
 from typing import Any, Dict, List, Sequence, Union
 
@@ -16,7 +16,9 @@ class RdbesService:
     """Light wrapper around the *Flask Oracle Insert API* JSON endpoints."""
 
     def __init__(self, base_url: str, timeout: int = DEFAULT_TIMEOUT):
-        self.base_url = base_url.rstrip("/")
+        # self.base_url = (base_url or os.getenv("RDBES_API_URL") or "").rstrip("/")
+        print(base_url)
+        self.base_url = base_url
         self.timeout = timeout
 
     # Internal HTTP helper --------------------------------------------------
@@ -25,7 +27,7 @@ class RdbesService:
         return f"{self.base_url}/{path.lstrip('/')}"
 
     def _request(self, method: str, path: str, *, json: Dict[str, Any] | None = None) -> Any:
-        resp = requests.request(method, self._url(path), json=json, timeout=self.timeout)
+        resp = request(method, self._url(path), json=json, timeout=self.timeout)
         resp.raise_for_status()
         return resp.json() if resp.content else None
 

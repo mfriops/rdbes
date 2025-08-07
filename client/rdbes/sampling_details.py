@@ -1,5 +1,8 @@
+#!/usr/local/bin/python3
+# coding: utf-8
 
 import pandas as pd
+from client.api.misc import get_country, get_organisation
 
 class SamplingDetails:
     SDrecordType = 'SD'
@@ -7,8 +10,8 @@ class SamplingDetails:
     def __init__(self):
         self.SDid = None
         self.DEid = None
-        self.SDcountry = 'IS'
-        self.SDinstitution = '4766'
+        self.SDcountry = get_country()
+        self.SDinstitution = get_organisation()
 
     def dict(self) -> dict:
         sd = {}

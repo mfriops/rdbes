@@ -1,8 +1,8 @@
 #!/usr/local/bin/python3
 # coding: utf-8
 
-from datetime import datetime
 import pandas as pd
+from datetime import datetime
 
 
 def parse_time(t):

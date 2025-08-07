@@ -1,9 +1,11 @@
+#!/usr/local/bin/python3
+# coding: utf-8
 
 import os
+import oracledb
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
-import oracledb
 
 # ---------------------------------------------------------------------------
 # Environment & SQLAlchemy bootstrap

@@ -24,8 +24,11 @@ class TaxonBusiness:
     # Public API                                                         #
     # ------------------------------------------------------------------ #
 
-    taxon_url = os.environ.get("ORACLE_API_URL", "http://localhost:5045")
-    taxon_service = TaxonService(taxon_url)
+    # taxon_url = os.environ.get("TAXON_API_URL", "http://localhost:5042")
+    taxon_api_url = os.environ.get("API_GATEWAY_URL", "http://localhost:8001").rstrip("/")
+    taxon_api_url = taxon_api_url + '/' + os.environ.get("TAXON_API_GATEWAY", "taxon").rstrip("/")
+    print(taxon_api_url)
+    taxon_service = TaxonService(taxon_api_url)
 
     def health(self):
         return jsonify(self.taxon_service.health())

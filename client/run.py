@@ -34,12 +34,13 @@ from flask import Flask, abort, jsonify, request, render_template, flash, Respon
 
 # from api.rdbes import RdbesService
 # from api.channel import ChannelService
-from presentation.rdbes import RdbesPresentation
-from presentation.channel import ChannelPresentation
-from presentation.gear import GearPresentation
-from presentation.vessel import VesselPresentation
-from presentation.taxon import TaxonPresentation
-from presentation.adb import AdbPresentation
+from business.rdbes import RdbesBusiness
+from business.channel import ChannelBusiness
+from business.gear import GearBusiness
+from business.vessel import VesselBusiness
+from business.taxon import TaxonBusiness
+from business.agf import AgfBusiness
+from business.adb import AdbBusiness
 
 from utils.validate import combine_errors
 from utils.rdbes import rdbes_existence
@@ -65,12 +66,13 @@ ALLOWED_TABLES: Set[str] | None = _parse_allowed_tables()
 def create_app() -> Flask:
     app = Flask(__name__)
 
-    rdbes_presentation = RdbesPresentation()
-    channel_presentation = ChannelPresentation()
-    gear_presentation = GearPresentation()
-    vessel_presentation = VesselPresentation()
-    taxon_presentation = TaxonPresentation()
-    adb_presentation = AdbPresentation()
+    rdbes_business = RdbesBusiness()
+    channel_business = ChannelBusiness()
+    taxon_business = TaxonBusiness()
+    gear_business = GearBusiness()
+    vessel_business = VesselBusiness()
+    agf_business = AgfBusiness()
+    adb_business = AdbBusiness()
 
     # Single generic insert route -----------------------------------------
 
@@ -84,40 +86,45 @@ def create_app() -> Flask:
 
         payload = request.get_json(force=True)  # ensure JSON
         # result = rdbes_client.insert(table, payload)
-        result = rdbes_presentation.insert(table, payload)
+        result = rdbes_business.insert(table, payload)
         return jsonify(result), 201
 
     # Health‑check proxy ----------------------------------------------------
 
-    @app.get("/Channel-health")
-    def channel_health():
-        # return jsonify(channel_service.health())
-        return channel_presentation.health()
-
     @app.get("/RDBES-health")
     def RDBES_health():
         # return jsonify(rdbes_service.health())
-        return rdbes_presentation.health()
+        return rdbes_business.health()
 
-    @app.get("/Gear-health")
-    def gear_health():
-        # return jsonify(rdbes_service.health())
-        return gear_presentation.health()
-
-    @app.get("/Vessel-health")
-    def vessel_health():
-        # return jsonify(rdbes_service.health())
-        return vessel_presentation.health()
+    @app.get("/Channel-health")
+    def channel_health():
+        # return jsonify(channel_service.health())
+        return channel_business.health()
 
     @app.get("/Taxon-health")
     def taxon_health():
         # return jsonify(rdbes_service.health())
-        return taxon_presentation.health()
+        return taxon_business.health()
+
+    @app.get("/Gear-health")
+    def gear_health():
+        # return jsonify(rdbes_service.health())
+        return gear_business.health()
+
+    @app.get("/Vessel-health")
+    def vessel_health():
+        # return jsonify(rdbes_service.health())
+        return vessel_business.health()
+
+    @app.get("/AGF-health")
+    def agf_health():
+        # return jsonify(rdbes_service.health())
+        return agf_business.health()
 
     @app.get("/ADB-health")
     def adb_health():
         # return jsonify(rdbes_service.health())
-        return adb_presentation.health()
+        return adb_business.health()
 
     # Root helper -----------------------------------------------------------
 
@@ -139,12 +146,12 @@ def create_app() -> Flask:
                     flash("Note: No action taken, cruise is missing!")
                     return render_template('index.html')
 
-                cruiseDict = channel_presentation.get_cruise(cruise)
+                cruiseDict = channel_business.get_cruise(cruise)
                 if cruiseDict == None:
                     flash('Note: No action taken, cruise: ' + cruise + ' not found in channel!')
                     return render_template('content.html')
 
-                retLanding = rdbes_presentation.set_landing(cruiseDict)
+                retLanding = rdbes_business.set_landing(cruiseDict)
 
                 if retLanding[0]['return'] > -1:
                     flash('Landing data successfully uploaded!')
@@ -171,12 +178,12 @@ def create_app() -> Flask:
                     flash("Note: No action taken, cruise is missing!")
                     return render_template('effort.html')
 
-                cruiseDict = channel_presentation.get_cruise(cruise)
+                cruiseDict = channel_business.get_cruise(cruise)
                 if cruiseDict == None:
                     flash('Note: No action taken, cruise: ' + cruise + ' not found in channel!')
                     return render_template('content.html')
 
-                retEffort = rdbes_presentation.set_effort(cruiseDict)
+                retEffort = rdbes_business.write_effort(cruiseDict)
 
                 if retEffort[0]['return'] > -1:
                     flash('Effort data successfully uploaded!')
@@ -214,7 +221,7 @@ def create_app() -> Flask:
                 #     flash('Note: No action taken, cruise name is missing!!')
                 #     return render_template('content.html')
 
-                cruiseDict = channel_presentation.get_cruise(cruise)
+                cruiseDict = channel_business.get_cruise(cruise)
                 if cruiseDict == None:
                     flash('Note: No action taken, cruise: ' + cruise + ' not found in channel!')
                     return render_template('content.html')
@@ -224,9 +231,9 @@ def create_app() -> Flask:
                 #         flash('Rdbes data delete, unsuccessful!')
                 #         return render_template('content.html')
 
-                retSample = rdbes_presentation.set_sample(cruiseDict)
+                retSample = rdbes_business.write_sample(cruiseDict)
 
-                if retSample[0]['return'] > -1:
+                if retSample['return'] > -1:
                     flash('Sample data successfully uploaded!')
                     return render_template('content.html')
                 else:
@@ -243,7 +250,7 @@ def create_app() -> Flask:
                     return render_template('sampling.html')
 
                 # 1. Define your large content and desired filename here.
-                csv_data = rdbes_presentation.set_file(localid, 'csv')
+                csv_data = rdbes_business.write_file(localid, 'csv')
                 filename = localid + '.csv'
 
                 # 2. Generate a unique ID and store the (filename, content) in our dictionary.
@@ -276,7 +283,7 @@ def create_app() -> Flask:
                     return render_template('sampling.html')
 
                 # 1. Define your large content and desired filename here.
-                xml_data = rdbes_presentation.set_file(localid, 'xml')
+                xml_data = rdbes_business.write_file(localid, 'xml')
                 filename = localid + '.xml'
 
                 # 2. Generate a unique ID and store the (filename, content) in our dictionary.

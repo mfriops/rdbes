@@ -43,10 +43,9 @@ from flask import Flask, abort, jsonify, request
 from sqlalchemy import select, and_
 
 from server.common.session import get_session_local
-from server.services.agf.null import null_landings
 from server.common.helper import to_dict
-
-from models import Landings
+from server.services.agf.null import null_landings
+from server.services.agf.models import Landings
 
 # ---------------------------------------------------------------------------
 # Create Session
@@ -169,4 +168,8 @@ def landings_endpoint():
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5045)))
+
+    host = "0.0.0.0"
+    port = int(os.getenv("PORT", 5045))
+    debug = os.environ.get("FLASK_DEBUG", "false").lower() in {"1", "true", "yes"}
+    app.run(host=host, port=port, debug=debug)

@@ -1,0 +1,110 @@
+version: "3.9"
+
+services:
+  api-gateway:
+    image: rdbes-server:latest
+    command: >
+      python -m uvicorn server.gateway.main:app
+      --host 0.0.0.0 --port 8001
+    ports:
+      - target: 8001
+        published: 8001
+        protocol: tcp
+        mode: host
+    env_file: [.env]
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CHANNEL_API_URL=http://channel:5041
+      - TAXON_API_URL=http://taxon:5042
+      - GEAR_API_URL=http://gear:5043
+      - VESSEL_API_URL=http://vessel:5044
+      - AGF_API_URL=http://agf:5045
+      - ADB_API_URL=http://adb:5046
+      - RDBES_API_URL=http://rdbes:5047
+    depends_on: [channel, taxon, gear, vessel, agf, adb, rdbes]
+    deploy: { replicas: 1 }
+
+  channel:
+    image: rdbes-server:latest
+    command: python -m server.services.channel.main
+    ports: [{ target: 5041, published: 5041, protocol: tcp, mode: host }]
+    env_file: [.env]
+    environment: ["PORT=5041"]
+    deploy: { replicas: 1 }
+
+  taxon:
+    image: rdbes-server:latest
+    command: python -m server.services.taxon.main
+    ports: [{ target: 5042, published: 5042, protocol: tcp, mode: host }]
+    env_file: [.env]
+    environment: ["PORT=5042"]
+    deploy: { replicas: 1 }
+
+  gear:
+    image: rdbes-server:latest
+    command: python -m server.services.gear.main
+    ports: [{ target: 5043, published: 5043, protocol: tcp, mode: host }]
+    env_file: [.env]
+    environment: ["PORT=5043"]
+    deploy: { replicas: 1 }
+
+  vessel:
+    image: rdbes-server:latest
+    command: python -m server.services.vessel.main
+    ports: [{ target: 5044, published: 5044, protocol: tcp, mode: host }]
+    env_file: [.env]
+    environment: ["PORT=5044"]
+    deploy: { replicas: 1 }
+
+  agf:
+    image: rdbes-server:latest
+    command: python -m server.services.agf.main
+    ports: [{ target: 5045, published: 5045, protocol: tcp, mode: host }]
+    env_file: [.env]
+    environment: ["PORT=5045"]
+    deploy: { replicas: 1 }
+
+  adb:
+    image: rdbes-server:latest
+    command: python -m server.services.adb.main
+    ports: [{ target: 5046, published: 5046, protocol: tcp, mode: host }]
+    env_file: [.env]
+    environment: ["PORT=5046"]
+    deploy: { replicas: 1 }
+
+  rdbes:
+    image: rdbes-server:latest
+    command: python -m server.services.rdbes.main
+    ports: [{ target: 5047, published: 5047, protocol: tcp, mode: host }]
+    env_file: [.env]
+    environment:
+      - PORT=5047
+      # GeoPackage config (container paths)
+      - FAO_GPKG_PATH=/opt/geo/fao.gpkg
+      - FAO_GPKG_LAYER=fao
+      - FAO_GPKG_CODE_FIELD=fao
+      - GPKG_ENGINE=pyogrio
+    # Option A: bind-mount your Windows file (ensure Docker Desktop has D: shared)
+    volumes:
+      - type: bind
+        source: "D:\\prod\\rdbes\\server\\shapefiles\\fao.gpkg"
+        target: /opt/geo/fao.gpkg
+        read_only: true
+    deploy: { replicas: 1 }
+
+  client:
+    image: rdbes-client:latest
+    command: python -m app.client.run
+    ports: [{ target: 5049, published: 5049, protocol: tcp, mode: host }]
+    env_file: [.env]
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FLASK_DEBUG=1
+      - API_CHANNEL_GATEWAY_URL=http://api-gateway:8001/channel
+      - API_TAXON_GATEWAY_URL=http://api-gateway:8001/taxon
+      - API_GEAR_GATEWAY_URL=http://api-gateway:8001/gear
+      - API_VESSEL_GATEWAY_URL=http://api-gateway:8001/vessel
+      - API_AGF_GATEWAY_URL=http://api-gateway:8001/agf
+      - API_ADB_GATEWAY_URL=http://api-gateway:8001/adb
+      - API_RDBES_GATEWAY_URL=http://api-gateway:8001/rdbes
+    deploy: { replicas: 1 }

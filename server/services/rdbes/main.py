@@ -57,8 +57,8 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 
 from server.common.helper import to_dict, _payload_to_values, parse_int_list
 from server.common.geo import get_fao_area
-from server.common.fetch import fetch_one, fetch_many
-from models import Harbour
+from server.common.fetch import fetch_many
+from server.services.rdbes.models import Harbour
 
 # ---------------------------------------------------------------------------
 # Create Session
@@ -397,4 +397,8 @@ for tbl_name in TABLES:
 
 # ───────────────────────────── entry-point ─────────────────────────────
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5047)))
+
+    host = "0.0.0.0"
+    port = int(os.getenv("PORT", 5047))
+    debug = os.environ.get("FLASK_DEBUG", "false").lower() in {"1", "true", "yes"}
+    app.run(host=host, port=port, debug=debug)

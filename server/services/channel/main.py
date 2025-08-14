@@ -38,24 +38,18 @@ Dependencies
 from __future__ import annotations
 
 import os
-import oracledb  # Oracle driver for SQLAlchemy "oracledb" dialect
-
-from typing import Any, Dict
 from datetime import datetime
-from dotenv import load_dotenv
 from flask import Flask, abort, jsonify, request
 
 from server.common.session import get_session_local
 from server.common.fetch import fetch_one, fetch_many
 from server.common.helper import to_dict, parse_int_list
-
-from models import Cruise, Station, Sample, Measure, Otolith, Species, SexualMaturity
+from server.services.channel.models import Cruise, Station, Sample, Measure, Otolith, Species, SexualMaturity
 
 # ---------------------------------------------------------------------------
 # Create Session
 # ---------------------------------------------------------------------------
 SessionLocal = get_session_local()
-
 
 
 # --- Cruise --------------------------------------------------------------
@@ -185,4 +179,8 @@ def sexual_maturity_endpoint(sexual_maturity_id: int):
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5041)))
+
+    host = "0.0.0.0"
+    port = int(os.getenv("PORT", 5041))
+    debug = os.environ.get("FLASK_DEBUG", "false").lower() in {"1", "true", "yes"}
+    app.run(host=host, port=port, debug=debug)

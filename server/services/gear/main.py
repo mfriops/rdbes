@@ -42,10 +42,9 @@ from datetime import datetime
 from flask import Flask, abort, jsonify, request
 
 from server.common.session import get_session_local
-from server.common.fetch import fetch_one, fetch_many
-from server.common.helper import to_dict, parse_int_list
-
-from models import FishingGear, Isscfg
+from server.common.fetch import fetch_many
+from server.common.helper import parse_int_list
+from server.services.gear.models import FishingGear, Isscfg
 
 # ---------------------------------------------------------------------------
 # Create Session
@@ -103,4 +102,8 @@ def isscfg_endpoint():
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5043)))
+
+    host = "0.0.0.0"
+    port = int(os.getenv("PORT", 5043))
+    debug = os.environ.get("FLASK_DEBUG", "false").lower() in {"1", "true", "yes"}
+    app.run(host=host, port=port, debug=debug)

@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  server-image:
+    build:
+      context: ./server
+    image: rdbes-server:latest
+
+  client-image:
+    build:
+      context: .                       # project root, so ./app is available
+      dockerfile: ./app/client/Dockerfile
+    image: rdbes-client:latest

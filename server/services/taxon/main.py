@@ -38,19 +38,13 @@ Dependencies
 from __future__ import annotations
 
 import os
-import oracledb  # Oracle driver for SQLAlchemy "oracledb" dialect
-from typing import Any, Dict
 from datetime import datetime
-from dotenv import load_dotenv
 from flask import Flask, abort, jsonify, request
-from sqlalchemy import Column, Float, Integer, Numeric, String, create_engine, select
-from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from server.common.session import get_session_local
-from server.common.fetch import fetch_one, fetch_many
-from server.common.helper import to_dict, parse_int_list
-
-from models import Species
+from server.common.fetch import fetch_many
+from server.common.helper import parse_int_list
+from server.services.taxon.models import Species
 
 # ---------------------------------------------------------------------------
 # Create Session
@@ -94,4 +88,8 @@ def species_endpoint():
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5042)))
+
+    host = "0.0.0.0"
+    port = int(os.getenv("PORT", 5042))
+    debug = os.environ.get("FLASK_DEBUG", "false").lower() in {"1", "true", "yes"}
+    app.run(host=host, port=port, debug=debug)

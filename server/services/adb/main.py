@@ -41,12 +41,12 @@ import os
 from datetime import datetime, time, date
 from flask import Flask, abort, jsonify, request
 from sqlalchemy import select, and_
+
 from server.common.session import get_session_local
-from server.services.adb.null import null_fishing_trip, null_fishing_station, null_trawl_and_seine_net
 from server.common.helper import to_dict, parse_int_list, parse_str_list
 from server.common.fetch import fetch_many
-
-from models import FishingTrip, FishingStation, TrawlAndSeineNet, TargetAssemblage
+from server.services.adb.null import null_fishing_trip, null_fishing_station, null_trawl_and_seine_net
+from server.services.adb.models import FishingTrip, FishingStation, TrawlAndSeineNet, TargetAssemblage
 
 # ---------------------------------------------------------------------------
 # Create Session
@@ -255,4 +255,8 @@ def target_assemblage_endpoint():
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5046)))
+
+    host = "0.0.0.0"
+    port = int(os.getenv("PORT", 5046))
+    debug = os.environ.get("FLASK_DEBUG", "false").lower() in {"1", "true", "yes"}
+    app.run(host=host, port=port, debug=debug)

@@ -1,8 +1,8 @@
 #!/usr/local/bin/python3
 # coding: utf-8
 
-from sqlalchemy import Column, Float, Integer, Numeric, String, Date, DateTime
-from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy import Column, Integer, Numeric, String, DateTime
+from sqlalchemy.orm import DeclarativeBase
 
 # ---------------------------------------------------------------------------
 # Declarative models (minimal column subsets)

@@ -14,6 +14,7 @@ from app.client.business.vessel import VesselBusiness
 from app.client.business.gear import GearBusiness
 from app.client.business.adb import AdbBusiness
 from app.client.business.agf import AgfBusiness
+from app.client.business.quota import QuotaBusiness
 from app.client.rdbes.design import Design
 from app.client.rdbes.fishing_trip import FishingTrip
 from app.client.rdbes.fishing_operation import FishingOperation
@@ -39,6 +40,8 @@ from app.client.classes.adb.fishing_trip import AdbFishingTrip
 from app.client.classes.adb.fishing_station import AdbFishingStation
 from app.client.classes.adb.trawl_and_seine_net import AdbTrawlAndSeineNet
 from app.client.classes.agf.landings import AgfLandings
+from app.client.classes.quota.quota import QuotaQuota
+
 from app.client.utils.ora import nvl
 from app.client.utils.misc import chunked
 
@@ -71,6 +74,7 @@ class RdbesBusiness:
     gear_business = GearBusiness()
     adb_business = AdbBusiness()
     agf_business = AgfBusiness()
+    quota_business = QuotaBusiness()
 
     def health(self) -> Dict[str, Any]:
         return jsonify(self.rdbes_service.health())
@@ -142,9 +146,28 @@ class RdbesBusiness:
 
         year = cruiseDict['cruise'][-4:]
         cruiseDict['year'] = year
+        cruiseDict['target_species_no'] = 36
 
         ##
-        ## Get all the data ---------------------------------------------------------------------------------
+        ## The population
+        ## Fyrst all the ships with quota -----------------------------------------------------------------------------------
+        quotaCol = ['registration_no','species_no','quota_type','quota','valid_from','valid_to']
+        quotaDf = pd.DataFrame([QuotaQuota(quota).dict() for quota in self.quota_business.get_quota(cruiseDict['target_species_no'], cruiseDict['year'])], columns=quotaCol)
+
+        ## Sum quota/weight over all quota types / ensure weight is numeric (optional but common) ----------------------
+        quotaDf['quota'] = pd.to_numeric(quotaDf['quota'], errors='coerce')
+
+        quotaSumDf = (
+            quotaDf
+            .groupby(['registration_no', 'species_no'], dropna=False, as_index=False)['quota']
+            .sum()
+        )
+
+        ## Then those ships that fishes Mackerel ------------------------------------------------------------------------------
+
+
+
+
 
         # channel-Cruise
         # channelCruiseDf = ChannelCruise(self.channel_business.get_cruise(cruiseDict['cruise'])).pand()

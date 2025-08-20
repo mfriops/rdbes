@@ -13,8 +13,9 @@ GEAR_API_URL = os.getenv('GEAR_API_URL')
 VESSEL_API_URL = os.getenv('VESSEL_API_URL')
 AGF_API_URL = os.getenv('AGF_API_URL')
 ADB_API_URL = os.getenv('ADB_API_URL')
+QUOTA_API_URL = os.getenv('QUOTA_API_URL')
 
-app = FastAPI(title="Rdbes API Gateway")
+app = FastAPI(title="Quota API Gateway")
 
 app.add_middleware(
     CORSMiddleware,
@@ -115,6 +116,18 @@ async def proxy_adb(path: str, request: Request):
     print(path)
     async with httpx.AsyncClient(timeout=timeout) as client:
         url = f"{ADB_API_URL}/{path}"
+        method = request.method
+        data = await request.body()
+        headers = dict(request.headers)
+        params = dict(request.query_params)  # <-- forward query parameters
+        r = await client.request(method, url, params=params, content=data, headers=headers)
+        return r.json()
+
+@app.api_route("/quota/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
+async def proxy_adb(path: str, request: Request):
+    print(path)
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        url = f"{QUOTA_API_URL}/{path}"
         method = request.method
         data = await request.body()
         headers = dict(request.headers)

@@ -137,7 +137,7 @@ def health():
     """Liveness/readiness probe."""
     current_timestamp = datetime.now().isoformat()
     response = {
-        "Landing-service Status": "200 OK",
+        "Quota service Status": "200 OK",
         "timestamp": current_timestamp
     }
     return jsonify(response), 200

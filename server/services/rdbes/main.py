@@ -268,6 +268,25 @@ def health():
     return jsonify(response), 200
 
 
+@app.route('/DBhealth', methods = ['GET'])
+def DBhealth_check():
+
+    with SessionLocal() as session:
+        try:
+            query = text("""
+                            SELECT ora_database_name "db_name", to_char(sysdate,'yyyy-mm-dd hh24:mi:ss') "timestamp" FROM dual
+                         """)
+            result = session.execute(query, None).fetchone()
+            session.close()
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    if result and result[0]:
+        return jsonify({"RDBES DB-status": '200 OK', "DB-name": result[0], "DB-timestamp": result[1]})
+    else:
+        return jsonify({"error": True, "message": result[1].get('error', 'Unknown error occurred'), "code": "RDBES.HEALTH_QUERY_FAILED"})
+
+
 # -------- read-only reference endpoints ---------------------------------
 
 # --- Harbour -------------------------------------------------------------
@@ -399,6 +418,6 @@ for tbl_name in TABLES:
 if __name__ == "__main__":
 
     host = "0.0.0.0"
-    port = int(os.getenv("PORT", 5047))
+    port = int(os.getenv("PORT", 5048))
     debug = os.environ.get("FLASK_DEBUG", "false").lower() in {"1", "true", "yes"}
     app.run(host=host, port=port, debug=debug)

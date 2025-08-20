@@ -20,8 +20,9 @@ services:
       - VESSEL_API_URL=http://vessel:5044
       - AGF_API_URL=http://agf:5045
       - ADB_API_URL=http://adb:5046
-      - RDBES_API_URL=http://rdbes:5047
-    depends_on: [channel, taxon, gear, vessel, agf, adb, rdbes]
+      - ADB_QUOTA_URL=http://quota:5047
+      - RDBES_API_URL=http://rdbes:5048
+    depends_on: [channel, taxon, gear, vessel, agf, adb, quota, rdbes]
     deploy: { replicas: 1 }
 
   channel:
@@ -72,13 +73,21 @@ services:
     environment: ["PORT=5046"]
     deploy: { replicas: 1 }
 
+  quota:
+    image: rdbes-server:latest
+    command: python -m server.services.quota.main
+    ports: [{ target: 5047, published: 5047, protocol: tcp, mode: host }]
+    env_file: [.env]
+    environment: ["PORT=5047"]
+    deploy: { replicas: 1 }
+
   rdbes:
     image: rdbes-server:latest
     command: python -m server.services.rdbes.main
-    ports: [{ target: 5047, published: 5047, protocol: tcp, mode: host }]
+    ports: [{ target: 5048, published: 5048, protocol: tcp, mode: host }]
     env_file: [.env]
     environment:
-      - PORT=5047
+      - PORT=5048
       # GeoPackage config (container paths)
       - FAO_GPKG_PATH=/opt/geo/fao.gpkg
       - FAO_GPKG_LAYER=fao
@@ -106,5 +115,6 @@ services:
       - API_VESSEL_GATEWAY_URL=http://api-gateway:8001/vessel
       - API_AGF_GATEWAY_URL=http://api-gateway:8001/agf
       - API_ADB_GATEWAY_URL=http://api-gateway:8001/adb
+      - API_QUOTA_GATEWAY_URL=http://api-gateway:8001/quota
       - API_RDBES_GATEWAY_URL=http://api-gateway:8001/rdbes
     deploy: { replicas: 1 }

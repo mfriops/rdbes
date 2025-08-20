@@ -7,7 +7,11 @@
 /dataSources/
 /dataSources.local.xml
 # Area shapefiles
-/server/shapefiles/
+/server/shapefiles/GSA_Federal_Locations
+/server/shapefiles/ICES_areas
+/server/shapefiles/ICES_Areas_maps
+/server/shapefiles/ICES_rectangles
+/server/shapefiles/*.zip
 
 __pycache__
 .idea

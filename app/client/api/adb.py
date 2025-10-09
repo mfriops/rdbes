@@ -82,7 +82,7 @@ class AdbService:
         return self._get_json(endpoint)
 
 
-    def get_fishing_station(self, fishing_trip_ids: Union[int, Sequence[int]]) -> Dict[str, Any]:
+    def get_fishing_station(self, fishing_trip_ids: Union[str, Sequence[str]]) -> Dict[str, Any]:
         # normalise to list[int] so we can join below
         if isinstance(fishing_trip_ids, str):
             ids: List[str] = [fishing_trip_ids]
@@ -95,6 +95,25 @@ class AdbService:
         # build “…?species_no=1,2,3”
         query = ",".join(str(i) for i in ids)
         endpoint = f"/fishing_station?fishing_trip_id={query}"
+        return self._get_json(endpoint)
+
+
+    def get_fishing_station_for_target(self, fishing_trip_ids: Union[str, Sequence[str]], target_species_no: int) -> Dict[str, Any]:
+        # normalise to list[int] so we can join below
+        if isinstance(fishing_trip_ids, str):
+            ids: List[str] = [fishing_trip_ids]
+        else:
+            ids = list(fishing_trip_ids)
+
+        if fishing_trip_ids is None:
+            raise ValueError("fishing_trip_ids may not be empty")
+
+        if target_species_no is None:
+            raise ValueError("target_species_no may not be empty")
+
+        # build “…?species_no=1,2,3”
+        query = ",".join(str(i) for i in ids)
+        endpoint = f"/fishing_station_for_target?fishing_trip_id={query}&target_species_no=" + str(target_species_no)
         return self._get_json(endpoint)
 
 

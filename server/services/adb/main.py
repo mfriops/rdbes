@@ -40,13 +40,14 @@ from __future__ import annotations
 import os
 from datetime import datetime, time, date
 from flask import Flask, abort, jsonify, request
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
+from sqlalchemy.sql import operators
 
 from server.common.session import get_session_local
 from server.common.helper import to_dict, parse_int_list, parse_str_list
 from server.common.fetch import fetch_many
-from server.services.adb.null import null_fishing_trip, null_fishing_station, null_trawl_and_seine_net
-from server.services.adb.models import FishingTrip, FishingStation, TrawlAndSeineNet, TargetAssemblage
+from server.services.adb.null import null_fishing_trip, null_fishing_station, null_fishing_station_for_target, null_trawl_and_seine_net
+from server.services.adb.models import FishingTrip, FishingStation, TrawlAndSeineNet, TargetAssemblage, TargetStationAssemblage
 
 # ---------------------------------------------------------------------------
 # Create Session
@@ -151,6 +152,23 @@ def get_fishing_station(fishing_trip_ids: list[str] | str):
         rec['fishing_end'] = rec['fishing_end'].strftime('%Y-%m-%d %H:%M') if rec['fishing_end'] != None else rec['fishing_end']
     return data
 
+
+def get_fishing_station_for_target(stmt):
+    # Execute and serialize
+    with SessionLocal() as session:
+        recs = session.scalars(stmt).all()
+
+    data = [to_dict(r) for r in recs]
+    if not data:
+        return null_fishing_station_for_target
+
+    for rec in data:
+        rec['fishing_start'] = rec['fishing_start'].strftime('%Y-%m-%d %H:%M') if rec['fishing_start'] != None else rec['fishing_start']
+        rec['fishing_end'] = rec['fishing_end'].strftime('%Y-%m-%d %H:%M') if rec['fishing_end'] != None else rec['fishing_end']
+
+    return data
+
+
 def get_trawl_and_seine_net(fishing_station_ids: list[int] | int):
     data = fetch_many(SessionLocal, TrawlAndSeineNet, TrawlAndSeineNet.fishing_station_id, fishing_station_ids)
     if data == []:
@@ -230,6 +248,44 @@ def fishing_station_endpoint():
     fishing_trip_ids = parse_str_list(request.args.get("fishing_trip_id"), param_name="fishing_trip_id")
     data = get_fishing_station(fishing_trip_ids)
     return jsonify(data) if data else abort(404, "No Fishing Stations found")
+
+
+@app.get("/fishing_station_for_target")
+def fishing_station_for_target_endpoint():
+    """
+    Query target stations for a given species across multiple fishing trips.
+    Query params:
+    - fishing_trip_ids: comma-separated list of trip IDs (strings)
+    - target_species_no: integer species number
+    """
+    fishing_trip_ids = parse_str_list(request.args.get("fishing_trip_id"), param_name="fishing_trip_id")
+    target_species_no = request.args.get("target_species_no", type=int)
+
+    # Validate inputs
+    if not fishing_trip_ids or target_species_no is None:
+        abort(400, "Missing required parameters: fishing_trip_ids and target_species_no")
+
+    # Build query
+    stmt = (
+        select(TargetStationAssemblage)
+        .where (
+            and_ (
+                    TargetStationAssemblage.species_no == target_species_no,
+                    TargetStationAssemblage.fishing_trip_id.in_(fishing_trip_ids),
+                 )
+                )
+
+    # Optional ordering: most recent fishing_start first, then station id
+        .order_by
+            (
+                TargetStationAssemblage.fishing_start.desc().nullslast(),
+                TargetStationAssemblage.fishing_station_id.asc(),
+            )
+    )
+
+    # Execute and serialize
+    data = get_fishing_station_for_target(stmt)
+    return jsonify(data) if data else abort(404, "No Fishing Stations for target found")
 
 @app.get("/trawl_and_seine_net")
 def trawl_and_seine_net_endpoint():

@@ -39,11 +39,14 @@ from app.client.classes.gear.isscfg import GearIsscfg
 from app.client.classes.adb.fishing_trip import AdbFishingTrip
 from app.client.classes.adb.fishing_station import AdbFishingStation
 from app.client.classes.adb.trawl_and_seine_net import AdbTrawlAndSeineNet
+from app.client.classes.adb.target_assemblage import AdbTargetAssemblage
+from app.client.classes.adb.target_station_assemblage import AdbTargetStationAssemblage
 from app.client.classes.agf.landings import AgfLandings
 from app.client.classes.quota.quota import QuotaQuota
 
 from app.client.utils.ora import nvl
 from app.client.utils.misc import chunked
+from server.services.adb.models import TargetAssemblage
 
 
 class RdbesBusiness:
@@ -144,56 +147,73 @@ class RdbesBusiness:
         errors = False
         errorsHtml = {}
 
-        year = cruiseDict['cruise'][-4:]
-        cruiseDict['year'] = year
-        cruiseDict['target_species_no'] = 36
+        # cruiseDict contains now all sample-cruises
+        target_species_no = 36
+        for cru in cruiseDict:
+            year = cru['cruise'][-4:]
+            cru['year'] = year
+            cru['target_species_no'] = target_species_no
 
         ##
         ## The population
-        ## Fyrst all the ships with quota -----------------------------------------------------------------------------------
-        quotaCol = ['registration_no','species_no','quota_type','quota','valid_from','valid_to']
-        quotaDf = pd.DataFrame([QuotaQuota(quota).dict() for quota in self.quota_business.get_quota(cruiseDict['target_species_no'], cruiseDict['year'])], columns=quotaCol)
+        # ## Fyrst all the ships with quota -----------------------------------------------------------------------------------
+        # quotaCol = ['registration_no','species_no','quota_type','quota','valid_from','valid_to']
+        # quotaDf = pd.DataFrame([QuotaQuota(quota).dict() for quota in self.quota_business.get_quota(target_species_no, year)], columns=quotaCol)
+        #
+        # ## Sum quota/weight over all quota types / ensure weight is numeric (optional but common) ----------------------
+        # quotaDf['quota'] = pd.to_numeric(quotaDf['quota'], errors='coerce')
+        #
+        # quotaTotDf = (
+        #     quotaDf
+        #     .groupby(['registration_no', 'species_no'], dropna=False)
+        #     .agg(total_quota=('quota', 'sum'))
+        #     .reset_index()
+        #     .query('total_quota > 100000') # Only vessel with quota > 100 tonn
+        #     .sort_values('registration_no', ignore_index=True)
+        # )
 
-        ## Sum quota/weight over all quota types / ensure weight is numeric (optional but common) ----------------------
-        quotaDf['quota'] = pd.to_numeric(quotaDf['quota'], errors='coerce')
+        ##
+        ## The population / those ships that fishes the quota ----------------------------------------------------------------------
+        populationCol = ['fishing_trip_id','registration_no','species_no','departure_date','landing_date','landing_year','quantity','catch_type','stations_cnt']
+        populationDf = pd.DataFrame([AdbTargetAssemblage(mack).dict() for mack in self.adb_business.get_target_assemblage(target_species_no, year)], columns=populationCol)
 
-        quotaSumDf = (
-            quotaDf
-            .groupby(['registration_no', 'species_no'], dropna=False, as_index=False)['quota']
-            .sum()
-        )
+        populationDf["quantity"] = pd.to_numeric(populationDf["quantity"], errors='coerce')
+        # populationDf = populationDf[populationDf["quantity"] > 10000]
 
-        ## Then those ships that fishes Mackerel ------------------------------------------------------------------------------
+        # ## Finally the population to sample from -----------------------------------------------------------------------
+        # populationDf = quotaTotDf.merge(
+        #                                fishDf,
+        #                                on="registration_no",
+        #                                how="inner" # only vessels on with quota and that fished the quota
+        #                                # suffixes=("_quota", "_mackerel")
+        #                     )
 
-
-
-
-
-        # channel-Cruise
-        # channelCruiseDf = ChannelCruise(self.channel_business.get_cruise(cruiseDict['cruise'])).pand()
 
         # channel-Stations
+        ## Get all the sample (stations), there can be more than one cruise, get station for all of them
         channelStationCol = ['cruise_id','station_id','station_date','latitude','longitude','vessel_no']
-        channelStationDf = pd.DataFrame([ChannelStation(stat).dict() for stat in self.channel_business.get_station(cruiseDict['cruise_id'])], columns=channelStationCol)
+        channelStaionList = []
+        for cru in cruiseDict:
+            for stat in self.channel_business.get_station(cru['cruise_id']):
+                channelStaionList.append(ChannelStation(stat).dict())
 
-        #  Merge with cruise on cruise_id from stationDf
-        # channelStationDf = channelStationDf.merge(channelCruiseDf[
-        #     ['cruise_id','departure', 'arrival']
-        #     ].rename(columns={'departure':'departure_date','arrival':'arrival_date'}), on='cruise_id', how='inner')
+        channelStationDf = pd.DataFrame(channelStaionList, columns=channelStationCol)
 
         # Find the ADB-Fishing Trip for all the channel-Stations
+        # TODO DB-call, slow ??
+        # TODO change station_date to noon from midnight
         self.update_trip_info(channelStationDf)
 
-        # vessel, first get registration_nos / Remove duplicate and None
+        # vessels, first get registration_nos for all sample-vessels / Remove duplicate and None
         registration_nos = channelStationDf['vessel_no'].dropna().unique()
         vesselDf = pd.DataFrame([VesselVessel(ves).dict() for ves in self.vessel_business.get_vessel(registration_nos)])
 
         # Merge with vessel on registration_no from sampleDf
-        # TODO þar líkleaa ekki þetta join nema kannski fyrir vessel_id
+        # TODO þarf líkleaa ekki þetta join nema kannski fyrir vessel_id, 7.10.2025 - ath. betur
         channelStationDf = channelStationDf.merge(vesselDf[['registration_no', 'vessel_id']], left_on='vessel_no', right_on='registration_no', how='inner')
         channelStationDf.drop(columns=['vessel_no'], inplace=True)
 
-        # TODO spurning um að hraða þessu með því að ná í allar hafnir/eða þær sem þarf - með einu kalli - og join svo datasettin
+        # To get all ICES-port-codes
         port_nos = pd.unique(
             pd.concat([
                 channelStationDf['departure_port_no'],
@@ -203,34 +223,20 @@ class RdbesBusiness:
         )
         harbourDf = pd.DataFrame([Harbour(port).dict() for port in self.get_harbour(port_nos)])
 
-        # Merge on key departure_port_no
+        # Merge on key departure_port_no for ICES-port-code
         channelStationDf = channelStationDf.merge(harbourDf.rename(columns={'harbour':'departure_harbour'}), left_on='departure_port_no', right_on='port_no', how='left')
         channelStationDf.drop(columns=['departure_port_no','port_no'], inplace=True)
 
-        # Update 'departure_harbour' with values from merged 'harbour' column
-        # channelStationDf['departure_harbour'] = channelStationDf['harbour'].combine_first(
-        #     channelStationDf['departure_harbour'])
-        # Optionally drop extra columns from merge (like 'harbour' and 'port_no')
-        # channelStationDf.drop(columns=['harbour', 'port_no'], inplace=True)
-
-        # Merge on key landing_port_no
+        # Merge on key landing_port_no for ICES-port-code
         channelStationDf = channelStationDf.merge(harbourDf.rename(columns={'harbour':'landing_harbour'}), left_on='landing_port_no', right_on='port_no', how='left')
         channelStationDf.drop(columns=['landing_port_no','port_no'], inplace=True)
 
-        # Update 'landing_harbour' with values from merged 'harbour' column
-        # channelStationDf['landing_harbour'] = channelStationDf['harbour'].combine_first(
-        #     channelStationDf['landing_harbour'])
-        # Optionally drop extra columns from merge (like 'harbour' and 'port_no')
-        # channelStationDf.drop(columns=['harbour', 'port_no'], inplace=True)
-
-        # Merge on key home_port_no
+        # Merge on key home_port_no for ICES-port-code
         vesselDf = vesselDf.merge(harbourDf.rename(columns={'harbour':'home_harbour'}), left_on='home_port_no', right_on='port_no', how='left')
         vesselDf.drop(columns=['home_port_no','port_no'], inplace=True)
         vesselDf['year'] = year
 
-        # TODO need to get a shapefile/geopackage/... for the areas
-        # TODO remove # lessi setning á að vera með, tekin út vegna slow
-        # TODO remove ? um að færa aftar og reikna á adb-lag/long
+        # TODO remove, spurning um að færa aftar og reikna á adb-lag/long, 7.10.2025 ath. betur með þetta
         channelStationDf['area'] = channelStationDf.apply(
             lambda row: self.get_area(row['latitude'],row['longitude'] or {}), axis=1
         )
@@ -240,22 +246,20 @@ class RdbesBusiness:
         channelSampleCol = ['station_id', 'sample_id', 'target_assemblage']
         channelSampleDf = pd.DataFrame([ChannelSample(samp).dict() for samp in self.channel_business.get_sample(station_ids)], columns=channelSampleCol)
 
-        # TODO Áður en farið er að uppfæra fieldin i station/sample þarf að finna réttu stöðin í adb.fishing_station_id
-        # TODO það er gert með: match_closest_station
-        # TODO þegar búið er að finna stöðina má uppfæra fieldin
-
-        # TODO First get all station for all the trips
+        # Before the update of the fields in station/sample the correct fishing-station needs to be found
+        # It is done with "match_closest_station"
 
         # Merge station and sample on station_id
         channelStationSampleDf = channelStationDf.merge(channelSampleDf, on='station_id', how='inner')
 
-        # Find the ADB-Fishing Trips for all the Sample taken
+        # Get the ADB-Fishing Trips for all the Sample taken
         fishing_trip_ids = channelStationDf['fishing_trip_id'].dropna().unique()
 
-        # Find the ADB-Fishing Stations for all the Fishing Trips
-        adbFishingStationDf = pd.DataFrame([AdbFishingStation(stat).dict() for stat in self.adb_business.get_fishing_station(fishing_trip_ids)])
+        # Find ALL the ADB-Fishing Stations for all the SAMPLE-Fishing Trips
+        # adbFishingStationDf = pd.DataFrame([AdbFishingStation(stat).dict() for stat in self.adb_business.get_fishing_station(fishing_trip_ids)])
+        adbFishingStationDf = pd.DataFrame([AdbTargetStationAssemblage(stat).dict() for stat in self.adb_business.get_fishing_station_for_target(fishing_trip_ids, target_species_no)])
 
-        # gear, first get isscfg_no / Remove duplicate and None
+        # Gear, first get isscfg_no / Remove duplicate and None
         fishing_gear_nos = adbFishingStationDf['fishing_gear_no'].dropna().unique()
         fishingGearDf = pd.DataFrame([GearFishingGear(fg).dict() for fg in self.gear_business.get_fishing_gear(fishing_gear_nos)])
         isscfg_nos = fishingGearDf['isscfg_no'].dropna().unique()
@@ -269,12 +273,11 @@ class RdbesBusiness:
 
 
         # Merge with station/sample
-        # TODO til bæði mesh_size_x og mesh_size_y. ? um að laga það
         # channelStationSampleDf.drop(columns=['mesh_size'],inplace=True)
         channelStationSampleDf = channelStationSampleDf.merge(adbFishingStationDf[
             ['fishing_trip_id', 'fishing_station_id', 'fishing_gear_no', 'fishing_start', 'fishing_end', 'latitude', 'longitude', 'latitude_end', 'longitude_end', 'mesh_size']
             ].rename(columns={'latitude':'tow_latitude','latitude_end':'tow_latitude_end','longitude':'tow_longitude','longitude_end':'tow_longitude_end'})
-            , on='fishing_trip_id', how='left')
+            , on='fishing_trip_id', how='inner')
         channelStationSampleDf['mesh_size'] = channelStationSampleDf['mesh_size'].astype('Int64')
         channelStationSampleDf['fishing_gear_no'] = channelStationSampleDf['fishing_gear_no'].astype('Int64')
 
@@ -346,8 +349,8 @@ class RdbesBusiness:
         # Design Tables ---------------------------------------------------------------------------------
 
         # Design / One Sample Design Record
-        designDE = Design(cruiseDict).pand()
-        designReport = validate_dataframe(designDE, Design(cruiseDict).validate())
+        designDE = Design(year).pand()
+        designReport = validate_dataframe(designDE, Design(year).validate())
         if dict_error(designReport):
             errors = True
             errorsHtml['design_errors'] = generate_html_from_dict(designReport, 'Design Validation')

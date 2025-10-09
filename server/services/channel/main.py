@@ -41,6 +41,7 @@ import os
 from datetime import datetime
 from flask import Flask, abort, jsonify, request
 
+from app.client.utils.misc import haskey
 from server.common.session import get_session_local
 from server.common.fetch import fetch_one, fetch_many
 from server.common.helper import to_dict, parse_int_list
@@ -55,6 +56,8 @@ SessionLocal = get_session_local()
 # --- Cruise --------------------------------------------------------------
 def get_cruise(code: str):
     data = fetch_one(SessionLocal, Cruise, Cruise.cruise, code)
+    if haskey(data,'Error'):
+        return data
     data['departure'] = data['departure'].strftime("%Y-%m-%d")
     data['arrival'] = data['arrival'].strftime("%Y-%m-%d")
     return data

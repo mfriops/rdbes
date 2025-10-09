@@ -14,10 +14,10 @@ class VesselDetails:
         self.VDcountry = 'IS'
         self.VDhomePort = vessel['home_harbour']
         self.VDflagCountry = 'IS'
-        self.VDlength = round(float(vessel['length']))
-        self.VDlengthCategory = vessel_length_category(float(vessel['length']))
-        self.VDpower = round(float(vessel['power_kw']))
-        self.VDtonnage = round(float(vessel['brutto_weight_tons']))
+        self.VDlength = round(float(vessel['length'])) if vessel['length'] != None else None
+        self.VDlengthCategory = vessel_length_category(float(vessel['length'])) if vessel['length'] != None else None
+        self.VDpower = round(float(vessel['power_kw'])) if vessel['power_kw'] != None else None
+        self.VDtonnage = round(float(vessel['brutto_weight_tons'])) if vessel['brutto_weight_tons'] is not None else None
         self.VDtonUnit = 'GRT'
 
     def dict(self) -> dict:

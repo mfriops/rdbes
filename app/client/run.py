@@ -41,6 +41,7 @@ from app.client.business.vessel import VesselBusiness
 from app.client.business.taxon import TaxonBusiness
 from app.client.business.agf import AgfBusiness
 from app.client.business.adb import AdbBusiness
+from app.client.utils.misc import haskey
 
 from app.client.utils.validate import combine_errors
 from app.client.utils.rdbes import rdbes_existence
@@ -225,8 +226,14 @@ def create_app() -> Flask:
                 #     flash('Note: No action taken, cruise name is missing!!')
                 #     return render_template('content.html')
 
-                cruiseDict = channel_business.get_cruise(cruise)
-                if cruiseDict == None:
+                cruises = [p.strip() for p in cruise.split(',') if cruise.strip()]
+                cruiseDict = []
+                for cru in cruises:
+                    cruiseInfo = channel_business.get_cruise(cru)
+                    if not haskey(cruiseInfo,'Error'):
+                        cruiseDict.append(cruiseInfo)
+
+                if cruiseDict == []:
                     flash('Note: No action taken, cruise: ' + cruise + ' not found in channel!')
                     return render_template('content.html')
 

@@ -6,12 +6,12 @@ import pandas as pd
 class Design:
     DErecordType = 'DE'
 
-    def __init__(self, cruise: dict):
+    def __init__(self, year: str):
         self.DEid = None
         self.DEsamplingScheme = "FO_Pelagic_At-sea"
         self.DEsamplingSchemeType = 'NatRouCF'
-        self.DEyear = cruise['year']
-        self.DEstratumName = cruise['cruise']
+        self.DEyear = year
+        self.DEstratumName = 'MAKR-'+year
         self.DEhierarchyCorrect = "Y"
         self.DEhierarchy = "2"
         self.DEsampled = "Y"

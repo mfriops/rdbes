@@ -15,7 +15,7 @@ def fetch_one(SessionLocal, model, column, value):
     stmt = select(model).where(column == value)
     with SessionLocal() as session:
         rec = session.scalars(stmt).first()
-        return to_dict(rec) if rec else None
+        return to_dict(rec) if rec else {'Error': 'Cruise not found!'}
 
 
 def fetch_many(

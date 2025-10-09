@@ -14,6 +14,8 @@ class AdbTargetAssemblage:
         self.landing_year = trip['landing_year']
         self.quantity = trip['quantity']
         self.catch_type = trip['catch_type']
+        self.stations_cnt = trip['stations_cnt']
+
 
     def dict(self) -> dict:
         me = {}
@@ -25,6 +27,7 @@ class AdbTargetAssemblage:
         me['landing_year'] = self.landing_year
         me['quantity'] = self.quantity
         me['catch_type'] = self.catch_type
+        me['stations_cnt'] = self.stations_cnt
         return me
 
     def pand(self) -> pd.DataFrame:

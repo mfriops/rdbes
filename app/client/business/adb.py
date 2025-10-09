@@ -40,8 +40,11 @@ class AdbBusiness:
     def get_fishing_station(self, fishing_trip_ids: list):
         return json.loads(jsonify(self.adb_service.get_fishing_station(fishing_trip_ids)).data)
 
+    def get_fishing_station_for_target(self, fishing_trip_ids: list, target_species_no: int):
+        return json.loads(jsonify(self.adb_service.get_fishing_station_for_target(fishing_trip_ids, target_species_no)).data)
+
     def get_trawl_and_seine_net(self, fishing_station_ids: list):
         return json.loads(jsonify(self.adb_service.get_trawl_and_seine_net(fishing_station_ids)).data)
 
     def get_target_assemblage(self, species_no: str, landing_year: int):
-        return json.loads(jsonify(self.adb_service.get(species_no, landing_year)).data)
+        return json.loads(jsonify(self.adb_service.get_target_assemblage(species_no, landing_year)).data)

@@ -22,6 +22,21 @@ null_fishing_station = [{
     "longitude_end": None
 }]
 
+null_fishing_station_for_target = [{
+    "fishing_station_id": None,
+    "fishing_trip_id": None,
+    "registration_no": None,
+    "fishing_gear_no": None,
+    "fishing_start": None,
+    "fishing_end": None,
+    "latitude": None,
+    "longitude": None,
+    "latitude_end": None,
+    "longitude_end": None,
+    "species_no": None,
+    "quantity": None
+}]
+
 null_trawl_and_seine_net = [{
     "fishing_station_id": None,
     "headline": None,
@@ -35,3 +50,4 @@ null_trawl_and_seine_net = [{
     "rope": None,
     "two_fg": None
 }]
+

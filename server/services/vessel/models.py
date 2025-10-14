@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import Column, Integer, Numeric
+from sqlalchemy import Column, Integer, Numeric, String
 from sqlalchemy.orm import DeclarativeBase
 
 class Base(DeclarativeBase):
@@ -15,6 +15,7 @@ class Vessel(Base):
     __table_args__ = {"schema": "vessel"}
     vessel_id = Column(Integer, primary_key=True)
     registration_no = Column(Integer)
+    status = Column(String(20))
     usage_category_no = Column(Integer)
     length = Column(Numeric)
     power_kw = Column(Numeric)

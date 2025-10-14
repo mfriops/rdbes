@@ -180,8 +180,8 @@ def get_trawl_and_seine_net(fishing_station_ids: list[int] | int):
 def get_target_assemblage(filter: dict):
     data = fetch_many_dict(TargetAssemblage, filter)
     for rec in data:
-        rec['departure_date'] = rec['departure_date'].strftime('%Y-%m-%d')
-        rec['landing_date'] = rec['landing_date'].strftime('%Y-%m-%d')
+        rec['departure_date'] = rec['departure_date'].strftime('%Y-%m-%d %H:%M')
+        rec['landing_date'] = rec['landing_date'].strftime('%Y-%m-%d %H:%M')
 
     return data
 

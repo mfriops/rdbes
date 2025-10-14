@@ -24,7 +24,7 @@ class SpeciesSelection:
         self.SSobservationType = 'Visual'
         self.SSsampler = 'SelfSampling'
         self.SSspeciesListName = species['name']
-        self.SSuseForCalculateZero = None
+        self.SSuseForCalculateZero = 'N'
         self.SStimeTotal = None
         self.SStimeTotalDataBasis = None
         self.SStimeSampled = None
@@ -33,14 +33,14 @@ class SpeciesSelection:
         self.SSnumberSampled = None
         self.SSselectionProb = None
         self.SSinclusionProb = None
-        self.SSselectionMethod = None
-        self.SSunitName = None
+        self.SSselectionMethod = 'FIXED'
+        self.SSunitName = species['name']
         self.SSselectionMethodCluster = None
         self.SSnumberTotalClusters = None
         self.SSnumberSampledClusters = None
         self.SSselectionProbCluster = None
         self.SSinclusionProbCluster = None
-        self.SSsampled = None
+        self.SSsampled = 'Y'
         self.SSreasonNotSampled = None
         self.SSnonResponseCollected = None
         self.SSauxiliaryVariableTotal = None

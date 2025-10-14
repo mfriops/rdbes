@@ -12,6 +12,8 @@ class AdbTargetAssemblage:
         self.departure_date = trip['departure_date']
         self.landing_date = trip['landing_date']
         self.landing_year = trip['landing_year']
+        self.departure_port_no = trip['departure_port_no']
+        self.landing_port_no = trip['landing_port_no']
         self.quantity = trip['quantity']
         self.catch_type = trip['catch_type']
         self.stations_cnt = trip['stations_cnt']
@@ -25,6 +27,8 @@ class AdbTargetAssemblage:
         me['departure_date'] = self.departure_date
         me['landing_date'] = self.landing_date
         me['landing_year'] = self.landing_year
+        me['departure_port_no'] = self.departure_port_no
+        me['landing_port_no'] = self.landing_port_no
         me['quantity'] = self.quantity
         me['catch_type'] = self.catch_type
         me['stations_cnt'] = self.stations_cnt

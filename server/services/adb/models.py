@@ -64,6 +64,8 @@ class TargetAssemblage(Base):
     departure_date = Column(DateTime)
     landing_date = Column(DateTime)
     landing_year = Column(String(4))
+    departure_port_no = Column(Integer)
+    landing_port_no = Column(Integer)
     quantity = Column(Numeric)
     catch_type = Column(String(12))
     stations_cnt = Column(Integer)

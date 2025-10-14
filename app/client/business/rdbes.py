@@ -174,7 +174,7 @@ class RdbesBusiness:
 
         ##
         ## The population / those ships that fishes the quota ----------------------------------------------------------------------
-        populationCol = ['fishing_trip_id','registration_no','species_no','departure_date','landing_date','landing_year','quantity','catch_type','stations_cnt']
+        populationCol = ['fishing_trip_id','registration_no','species_no','departure_date','landing_date','departure_port_no','landing_port_no','landing_year','quantity','catch_type','stations_cnt']
         populationDf = pd.DataFrame([AdbTargetAssemblage(mack).dict() for mack in self.adb_business.get_target_assemblage(target_species_no, year)], columns=populationCol)
 
         populationDf["quantity"] = pd.to_numeric(populationDf["quantity"], errors='coerce')
@@ -204,32 +204,37 @@ class RdbesBusiness:
         # TODO change station_date to noon from midnight
         self.update_trip_info(channelStationDf)
 
-        # vessels, first get registration_nos for all sample-vessels / Remove duplicate and None
-        registration_nos = channelStationDf['vessel_no'].dropna().unique()
+        # vessels, first get registration_nos for all population and sample-vessels / Remove duplicate and None
+        registration_nos = pd.unique(
+            pd.concat([
+                populationDf['registration_no'],
+                channelStationDf['vessel_no'],
+            ]).dropna()
+        )
         vesselDf = pd.DataFrame([VesselVessel(ves).dict() for ves in self.vessel_business.get_vessel(registration_nos)])
 
         # Merge with vessel on registration_no from sampleDf
         # TODO þarf líkleaa ekki þetta join nema kannski fyrir vessel_id, 7.10.2025 - ath. betur
-        channelStationDf = channelStationDf.merge(vesselDf[['registration_no', 'vessel_id']], left_on='vessel_no', right_on='registration_no', how='inner')
-        channelStationDf.drop(columns=['vessel_no'], inplace=True)
+        populationDf = populationDf.merge(vesselDf[['registration_no', 'vessel_id']], on='registration_no', how='inner')
 
+        # TODO breyta þannig að ég uppfæri hafnir i populationDf í stað channelStationDf
         # To get all ICES-port-codes
         port_nos = pd.unique(
             pd.concat([
-                channelStationDf['departure_port_no'],
-                channelStationDf['landing_port_no'],
+                populationDf['departure_port_no'],
+                populationDf['landing_port_no'],
                 vesselDf['home_port_no'],
             ]).dropna()
         )
         harbourDf = pd.DataFrame([Harbour(port).dict() for port in self.get_harbour(port_nos)])
 
         # Merge on key departure_port_no for ICES-port-code
-        channelStationDf = channelStationDf.merge(harbourDf.rename(columns={'harbour':'departure_harbour'}), left_on='departure_port_no', right_on='port_no', how='left')
-        channelStationDf.drop(columns=['departure_port_no','port_no'], inplace=True)
+        populationDf = populationDf.merge(harbourDf.rename(columns={'harbour':'departure_harbour'}), left_on='departure_port_no', right_on='port_no', how='left')
+        populationDf.drop(columns=['departure_port_no','port_no'], inplace=True)
 
         # Merge on key landing_port_no for ICES-port-code
-        channelStationDf = channelStationDf.merge(harbourDf.rename(columns={'harbour':'landing_harbour'}), left_on='landing_port_no', right_on='port_no', how='left')
-        channelStationDf.drop(columns=['landing_port_no','port_no'], inplace=True)
+        populationDf = populationDf.merge(harbourDf.rename(columns={'harbour':'landing_harbour'}), left_on='landing_port_no', right_on='port_no', how='left')
+        populationDf.drop(columns=['landing_port_no','port_no'], inplace=True)
 
         # Merge on key home_port_no for ICES-port-code
         vesselDf = vesselDf.merge(harbourDf.rename(columns={'harbour':'home_harbour'}), left_on='home_port_no', right_on='port_no', how='left')
@@ -335,6 +340,16 @@ class RdbesBusiness:
 
         # All missing values across numeric, datetime, and extension types are replaced with actual Python None.
         sampleDf = sampleDf.astype(object).where(pd.notna(sampleDf), None)
+        populationDf = populationDf.astype(object).where(pd.notna(populationDf), None)
+
+        # Use populationDf, this is CENSUS, all Mackerel fishing trips
+        populationSampleDf = populationDf.merge(sampleDf, on='fishing_trip_id', how='left')
+        populationSampleDf = populationSampleDf.astype(object).where(pd.notna(populationSampleDf), None)
+
+        # Add sequence No to the Df
+        populationSampleDf['sequence_no'] = populationSampleDf.sort_values('departure_date').reset_index().index + 1
+        populationSampleDf['total_numer'] = len(populationSampleDf)
+        populationSampleDf['sampled_numer'] = populationSampleDf['sample_id'].notna().sum()
 
         # Convert all timestamp columns to string / skip None
         # for col in sampleDf.select_dtypes(include=['datetime64[ns]', 'datetime64[ns, UTC]']).columns:
@@ -373,8 +388,8 @@ class RdbesBusiness:
             errorsHtml['vessel_details_errors'] = generate_html_from_dict(vesselDetailsReport, 'vessel Details Validation')
 
         # Fishing Trip / One record for each Fishing Trip - possible to get the fishing trip information from ADB
-        fishingTripFT = pd.DataFrame([FishingTrip(samp).dict() for samp in sampleDf.to_dict(orient='records')])
-        fishingTripReport = validate_dataframe(fishingTripFT, FishingTrip(sampleDf.to_dict(orient='records')[0]).validate())
+        fishingTripFT = pd.DataFrame([FishingTrip(samp).dict() for samp in populationSampleDf.to_dict(orient='records')])
+        fishingTripReport = validate_dataframe(fishingTripFT, FishingTrip(populationSampleDf.to_dict(orient='records')[0]).validate())
         if dict_error(fishingTripReport):
             errors = True
             errorsHtml['fishing_trip_errors'] = generate_html_from_dict(fishingTripReport, 'Fishing Trip Validation')
@@ -452,29 +467,30 @@ class RdbesBusiness:
         # Frequency Measure / Length distributions
         # sampleMeasureLengthUq = pd.merge(channelSampleDf, biotaMeasureDf.loc[biotaMeasureDf['species_no'].notnull()], on='sample_id').drop_duplicates(subset=['sample_id', 'species_no','length'])[['sample_id', 'species_no','length']].to_dict('records')
 
-        # Group by sample_id, species_no, and length
-        frequencyDf = (
-            measureDf
-            .groupby(['sample_id', 'species_no', 'length'])
-            .size()
-            .reset_index(name='frequency')
-            .sort_values(['sample_id', 'species_no', 'length'])
-        )
-
-        # TODO sum count column for frequency
+        # TODO not do any frequency measures, only individual biological variable
+        # # Group by sample_id, species_no, and length
         # frequencyDf = (
         #     measureDf
-        #     .groupby(['sample_id', 'species_no', 'length'], as_index=False)['count']
-        #     .sum()
+        #     .groupby(['sample_id', 'species_no', 'length'])
+        #     .size()
         #     .reset_index(name='frequency')
         #     .sort_values(['sample_id', 'species_no', 'length'])
         # )
-
-        frequencyMeasureFM = pd.DataFrame([FrequencyMeasure(freq).dict() for freq in frequencyDf.to_dict('records')])
-        frequencyMeasureReport = validate_dataframe(frequencyMeasureFM, FrequencyMeasure(frequencyDf.to_dict(orient='records')[0]).validate())
-        if dict_error(frequencyMeasureReport):
-            errors = True
-            errorsHtml['frequency_measure_errors'] = generate_html_from_dict(frequencyMeasureReport, 'Frequency Measure')
+        #
+        # # TODO sum count column for frequency
+        # # frequencyDf = (
+        # #     measureDf
+        # #     .groupby(['sample_id', 'species_no', 'length'], as_index=False)['count']
+        # #     .sum()
+        # #     .reset_index(name='frequency')
+        # #     .sort_values(['sample_id', 'species_no', 'length'])
+        # # )
+        #
+        # frequencyMeasureFM = pd.DataFrame([FrequencyMeasure(freq).dict() for freq in frequencyDf.to_dict('records')])
+        # frequencyMeasureReport = validate_dataframe(frequencyMeasureFM, FrequencyMeasure(frequencyDf.to_dict(orient='records')[0]).validate())
+        # if dict_error(frequencyMeasureReport):
+        #     errors = True
+        #     errorsHtml['frequency_measure_errors'] = generate_html_from_dict(frequencyMeasureReport, 'Frequency Measure')
 
         # Biological Variable
         # Each measurement

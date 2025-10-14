@@ -62,7 +62,7 @@ class FishingOperation:
         self.FOnumberFOsampled = None
         self.FOselectionProb = None
         self.FOinclusionProb = None
-        self.FOselectionMethod = 'Unknown'
+        self.FOselectionMethod = 'NPJS'
         self.FOunitName = sample['fishing_station_id']
         self.FOselectionMethodCluster = None
         self.FOnumberTotalClusters = None

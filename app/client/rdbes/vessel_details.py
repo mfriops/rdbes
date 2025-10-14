@@ -8,12 +8,13 @@ class VesselDetails:
     VDrecordType = 'VD'
 
     def __init__(self, vessel: dict):
+
         self.VDid = None
         self.VDencryptedVesselCode = vessel['vessel_id']
         self.VDyear = vessel['year']
-        self.VDcountry = 'IS'
+        self.VDcountry = 'IS' if vessel['status'] == 'Á aðalskipaskrá' else 'XX'
         self.VDhomePort = vessel['home_harbour']
-        self.VDflagCountry = 'IS'
+        self.VDflagCountry = 'IS' if vessel['status'] == 'Á aðalskipaskrá' else 'XX'
         self.VDlength = round(float(vessel['length'])) if vessel['length'] != None else None
         self.VDlengthCategory = vessel_length_category(float(vessel['length'])) if vessel['length'] != None else None
         self.VDpower = round(float(vessel['power_kw'])) if vessel['power_kw'] != None else None

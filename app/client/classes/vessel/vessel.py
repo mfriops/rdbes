@@ -8,6 +8,7 @@ class VesselVessel:
     def __init__(self, vessel: dict):
         self.vessel_id = vessel['vessel_id']
         self.registration_no = vessel['registration_no']
+        self.status = vessel['status']
         self.usage_category_no = vessel['usage_category_no']
         self.length = vessel['length']
         self.power_kw = vessel['power_kw']
@@ -18,6 +19,7 @@ class VesselVessel:
         ve = {}
         ve['vessel_id'] = self.vessel_id
         ve['registration_no'] = self.registration_no
+        ve['status'] = self.status
         ve['usage_category_no'] = self.usage_category_no
         ve['length'] = self.length
         ve['power_kw'] = self.power_kw

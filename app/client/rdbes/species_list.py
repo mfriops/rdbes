@@ -2,7 +2,7 @@
 # coding: utf-8
 
 import pandas as pd
-from app.client.api.misc import get_country
+from app.client.api.misc import get_country, get_organisation
 
 
 class SpeciesList:
@@ -11,7 +11,7 @@ class SpeciesList:
     def __init__(self, species: dict):
         self.SLid = None
         self.SLcountry = get_country()
-        self.SLinstitute = get_country()
+        self.SLinstitute = get_organisation()
         self.SLspeciesListName = species['name']
         self.SLyear = species['year']
         self.SLcatchFraction = 'Catch'

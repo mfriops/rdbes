@@ -15,35 +15,35 @@ class FishingTrip:
         self.FOid = None
         self.TEid = None
         self.FTencryptedVesselCode = sample['vessel_id']
-        self.FTsequenceNumber = None
+        self.FTsequenceNumber = sample['sequence_no']
         self.FTstratification = 'N'
         self.FTstratumName = 'U'
         self.FTclustering = 'N'
         self.FTclusterName = 'U'
         self.FTsampler = 'SelfSampling'
         self.FTsamplingType = 'AtSea'
-        self.FTnumberOfHaulsOrSets = None
-        self.FTdepartureLocation = sample['departure_harbour']
-        self.FTdepartureDate = sample['departure'][:10] if sample['departure'] != None else None
-        self.FTdepartureTime = sample['departure'][:11:16] if sample['departure'] != None else None
-        self.FTarrivalLocation = sample['landing_harbour']
-        self.FTarrivalDate = sample['arrival'][:10] if sample['arrival'] != None else None
-        self.FTarrivalTime = sample['arrival'][11:16] if sample['arrival'] != None else None
+        self.FTnumberOfHaulsOrSets = sample['stations_cnt']
+        self.FTdepartureLocation = sample['departure_harbour'] if sample['departure_harbour'] != None else 'IS999'
+        self.FTdepartureDate = sample['departure_date'][:10] if sample['departure_date'] != None else None
+        self.FTdepartureTime = sample['departure_date'][11:16] if sample['departure_date'] != None else None
+        self.FTarrivalLocation = sample['landing_harbour'] if sample['landing_harbour'] != None else 'IS999'
+        self.FTarrivalDate = sample['landing_date'][:10] if sample['landing_date'] != None else None
+        self.FTarrivalTime = sample['landing_date'][11:16] if sample['landing_date'] != None else None
         self.FTdominantLandingDate = None
-        self.FTnumberTotal = None
-        self.FTnumberSampled = None
+        self.FTnumberTotal = sample['total_numer']
+        self.FTnumberSampled = sample['sampled_numer']
         self.FTselectionProb = None
         self.FTinclusionProb = None
-        self.FTselectionMethod = 'NotApplicable'
+        self.FTselectionMethod = 'CENSUS'
         self.FTunitName = sample['fishing_trip_id']
         self.FTselectionMethodCluster = None
         self.FTnumberTotalClusters = None
         self.FTnumberSampledClusters = None
         self.FTselectionProbCluster = None
         self.FTinclusionProbCluster = None
-        self.FTsampled = 'Y'
-        self.FTreasonNotSampled = None
-        self.FTnonResponseCollected = None
+        self.FTsampled = 'Y' if sample['station_id']  != None else 'N'
+        self.FTreasonNotSampled = 'Unknown'
+        self.FTnonResponseCollected = 'Y'
         self.FTauxiliaryVariableTotal = None
         self.FTauxiliaryVariableValue = None
         self.FTauxiliaryVariableName = None

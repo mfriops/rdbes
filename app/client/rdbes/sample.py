@@ -18,7 +18,7 @@ class Sample:
         self.SAstateOfProcessing = 'DEF'
         self.SApresentation = 'WHL'
         self.SAspecimensState = 'Unknown'
-        self.SAcatchCategory = None
+        self.SAcatchCategory = 'Catch'
         self.SAlandingCategory = None
         self.SAcommSizeCatScale = None
         self.SAcommSizeCat = None
@@ -40,18 +40,18 @@ class Sample:
         self.SAmeshSize = None
         self.SAselectionDevice = None
         self.SAselectionDeviceMeshSize = None
-        self.SAunitType = None
+        self.SAunitType = 'Box'
         self.SAtotalWeightLive = None
         self.SAsampleWeightLive = None
         self.SAnumberTotal = None
         self.SAnumberSampled = None
         self.SAselectionProb = None
         self.SAinclusionProb = None
-        self.SAselectionMethod = None
-        self.SAunitName = None
-        self.SAlowerHierarchy = None
-        self.SAsampler = None
-        self.SAsampled = None
+        self.SAselectionMethod = 'NPJS'
+        self.SAunitName = sample['sample_id']
+        self.SAlowerHierarchy = 'C'
+        self.SAsampler = 'SelfSampling'
+        self.SAsampled = 'Y'
         self.SAreasonNotSampled = None
         self.SAnonResponseCollected = None
         self.SAreasonNotSampledFM = None
@@ -177,18 +177,18 @@ class Sample:
             {"name": 'SAmeshSize',                         "dtype": "int", "not_null": False},
             {"name": 'SAselectionDevice',                  "dtype": "int", "not_null": False, "allowed_values": ["0","1","2","3","4"]},
             {"name": 'SAselectionDeviceMeshSize',          "dtype": "int", "not_null": False},
-            {"name": 'SAunitType',                         "dtype": "str", "not_null": True, "allowed_values": ["SA"]},
+            {"name": 'SAunitType',                         "dtype": "str", "not_null": True, "allowed_values": ["Basket",'Box','Container','Haul','Individuals','Minutes','Number','Tray','Weight']},
             {"name": 'SAtotalWeightLive',                  "dtype": "int", "not_null": False},
             {"name": 'SAsampleWeightLive',                 "dtype": "int", "not_null": False},
             {"name": 'SAnumberTotal',                      "dtype": "float", "not_null": False, "range": (0.1, 999999999)},
             {"name": 'SAnumberSampled',                    "dtype": "float", "not_null": False, "range": (0.1, 999999999)},
             {"name": 'SAselectionProb',                    "dtype": "float", "not_null": False, "range": (0, 1)},
             {"name": 'SAinclusionProb',                    "dtype": "float", "not_null": False, "range": (0, 1)},
-            {"name": 'SAselectionMethod',                  "dtype": "str", "not_null": True, "allowed_values": ["SA"]},
+            {"name": 'SAselectionMethod',                  "dtype": "str", "not_null": True, "allowed_values": ["CENSUS", "D", "FIXED", "NotApplicable", "NPCLQS-O", "NPCLQS-T", "NPCS", "NPJS", "NPQSRSWOR", "NPQSRSWR", "NPQSYSS", "R", "SRSWOR", "SRSWR", "SYSS", "Unknown", "UPSWOR", "UPSWR"]},
             {"name": 'SAunitName',                         "dtype": "str", "not_null": True},
-            {"name": 'SAlowerHierarchy',                   "dtype": "str", "not_null": False, "allowed_values": ["SA"]},
-            {"name": 'SAsampler',                          "dtype": "str", "not_null": False, "allowed_values": ["SA"]},
-            {"name": 'SAsampled',                          "dtype": "str", "not_null": True, "allowed_values": ["SA"]},
+            {"name": 'SAlowerHierarchy',                   "dtype": "str", "not_null": False, "allowed_values": ["A", "B", "C", "D"]},
+            {"name": 'SAsampler',                          "dtype": "str", "not_null": False, "allowed_values": ["Control", "Imagery", "Observer", "SelfSampling"]},
+            {"name": 'SAsampled',                          "dtype": "str", "not_null": True, "allowed_values": ["N", "Y"]},
             {"name": 'SAreasonNotSampled',                 "dtype": "str", "not_null": False, "allowed_values": ["CameraNotWorking", "CameraViewObstructed", "IndustryDeclined", "NoAnswer", "NoContactDetails", "NotAvailable", "ObserverDeclined", "Other", "OutOfFrame", "PoorImageQuality", "QuotaReached", "Unknown"]},
             {"name": 'SAnonResponseCollected',             "dtype": "str", "not_null": False, "allowed_values": ["N","Y"]},
             {"name": 'SAreasonNotSampledFM',               "dtype": "str", "not_null": False},

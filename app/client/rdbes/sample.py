@@ -6,7 +6,15 @@ import pandas as pd
 class Sample:
     SArecordType = 'SA'
 
-    def __init__(self, sample: dict):
+    def __init__(self, sample: dict | None = None):
+
+        """Initialize from a sample dict, or create an empty instance."""
+        if sample is None:
+            # create an empty instance (all attributes None)
+            for spec in self.validate():
+                setattr(self, spec["name"], None)
+            return
+
         self.SAid = sample['sample_id']
         self.SSid = sample['sample_id']
         self.SAsequenceNumber = None   # Needs to be fixed later to sequence_no
@@ -64,7 +72,6 @@ class Sample:
         self.SAauxiliaryVariableValue = None
         self.SAauxiliaryVariableName = None
         self.SAauxiliaryVariableUnit = None
-
 
     def dict(self) -> dict:
         sa = {}
@@ -128,6 +135,10 @@ class Sample:
         sa['SAauxiliaryVariableUnit']= self.SAauxiliaryVariableUnit
         return sa
 
+    def columns(self) -> list[str]:
+        """Return all column names in the same order as dict()."""
+        return list(map(str.lower, self.dict().keys()))
+
     def pand(self) -> pd.DataFrame:
         # return self.dict()
         return pd.DataFrame([self.dict()])
@@ -139,7 +150,6 @@ class Sample:
             return 'Male'
         elif sex_no == 2:
             return 'Female'
-
 
     def validate(self):
         return [

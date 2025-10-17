@@ -6,12 +6,19 @@ import pandas as pd
 class IndividualSpecies:
     ISrecordType = 'IS'
 
-    def __init__(self, species: dict):
+    def __init__(self, species: dict | None = None):
+
+        """Initialize from a sample dict, or create an empty instance."""
+        if species is None:
+            # create an empty instance (all attributes None)
+            for spec in self.validate():
+                setattr(self, spec["name"], None)
+            return
+
         self.ISid = None
         self.SLid = None
         self.IScommercialTaxon = species['worms_id']
         self.ISspeciesCode = species['worms_id']
-
 
     def dict(self) -> dict:
         isp = {}
@@ -22,11 +29,13 @@ class IndividualSpecies:
         isp['ISspeciesCode'] = self.ISspeciesCode
         return isp
 
+    def columns(self) -> list[str]:
+        """Return all column names in the same order as dict()."""
+        return list(map(str.lower, self.dict().keys()))
 
     def pand(self) -> pd.DataFrame:
         # return self.dict()
         return pd.DataFrame([self.dict()])
-
 
     def validate(self):
         return [

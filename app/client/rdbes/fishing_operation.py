@@ -7,7 +7,15 @@ from app.client.utils.geo import ices_statistical_rectangle
 class FishingOperation:
     FOrecordType = 'FO'
 
-    def __init__(self, sample: dict):
+    def __init__(self, sample: dict | None = None):
+
+        """Initialize from a sample dict, or create an empty instance."""
+        if sample is None:
+            # create an empty instance (all attributes None)
+            for spec in self.validate():
+                setattr(self, spec["name"], None)
+            return
+
         self.FOid = sample['fishing_station_id']
         self.FTid = sample['fishing_trip_id']
         self.SDid = None
@@ -77,8 +85,8 @@ class FishingOperation:
         self.FOauxiliaryVariableName = None
         self.FOauxiliaryVariableUnit = None
 
-
-    def dict(self) -> list:
+    def dict(self) -> dict:
+        """Return attributes as a dictionary."""
         fo = {}
         fo['FOid'] = self.FOid
         fo['FTid'] = self.FTid
@@ -151,10 +159,13 @@ class FishingOperation:
         fo['FOauxiliaryVariableUnit'] = self.FOauxiliaryVariableUnit
         return fo
 
+    def columns(self) -> list[str]:
+        """Return all column names in the same order as dict()."""
+        return list(map(str.lower, self.dict().keys()))
+
     def pand(self: list) -> pd.DataFrame:
         # return self.dict()
         return pd.DataFrame([self.dict()])
-
 
     def validate(self):
         return [

@@ -6,7 +6,15 @@ import pandas as pd
 class CommercialEffort:
     CErecordType = 'CE'
 
-    def __init__(self, eff: dict):
+    def __init__(self, eff: dict | None = None):
+
+        """Initialize from a sample dict, or create an empty instance."""
+        if eff is None:
+            # create an empty instance (all attributes None)
+            for spec in self.validate():
+                setattr(self, spec["name"], None)
+            return
+
         self.CEcommercialEffort = None
         self.CEdataBasisOfScientificEffort = None
         self.CEdataSourceOfScientificEffort = None
@@ -72,9 +80,7 @@ class CommercialEffort:
 
         self.CElabel = None
 
-
-
-    def dict(self) -> list:
+    def dict(self) -> dict:
         ce = {}
         ce['CEcommercialEffort'] = self.CEcommercialEffort
         ce['CErecordType'] = self.CErecordType
@@ -142,11 +148,13 @@ class CommercialEffort:
         ce['CElabel'] = self.CElabel
         return ce
 
+    def columns(self) -> list[str]:
+        """Return all column names in the same order as dict()."""
+        return list(map(str.lower, self.dict().keys()))
 
     def pand(self) -> pd.DataFrame:
         # return self.dict()
         return pd.DataFrame([self.dict()])
-
 
     def validate(self):
         return [

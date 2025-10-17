@@ -6,7 +6,15 @@ import pandas as pd
 class Design:
     DErecordType = 'DE'
 
-    def __init__(self, year: str):
+    def __init__(self, year: str | None = None):
+
+        """Initialize from a sample dict, or create an empty instance."""
+        if year is None:
+            # create an empty instance (all attributes None)
+            for spec in self.validate():
+                setattr(self, spec["name"], None)
+            return
+
         self.DEid = None
         self.DEsamplingScheme = "FO_Pelagic_At-sea"
         self.DEsamplingSchemeType = 'NatRouCF'
@@ -42,6 +50,10 @@ class Design:
         de['DEauxiliaryVariableUnit'] = self.DEauxiliaryVariableUnit
         de['DElabel'] = self.DElabel
         return de
+
+    def columns(self) -> list[str]:
+        """Return all column names in the same order as dict()."""
+        return list(map(str.lower, self.dict().keys()))
 
     def pand(self) -> pd.DataFrame:
         return pd.DataFrame([self.dict()])

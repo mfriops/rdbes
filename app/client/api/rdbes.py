@@ -10,6 +10,8 @@ from typing import Any, Dict, List, Sequence, Union
 # ---------------------------------------------------------------------------
 
 DEFAULT_TIMEOUT: int = 5  # seconds
+CONNECT_TIMEOUT = 3
+READ_TIMEOUT = 60  # or 120 if needed
 
 class RdbesService:
     """Light wrapper around the *Flask Oracle Insert API* JSON endpoints."""
@@ -26,7 +28,7 @@ class RdbesService:
         return f"{self.base_url}/{path.lstrip('/')}"
 
     def _request(self, method: str, path: str, *, json: Dict[str, Any] | None = None) -> Any:
-        resp = request(method, self._url(path), json=json, timeout=self.timeout)
+        resp = request(method, self._url(path), json=json, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
         resp.raise_for_status()
         return resp.json() if resp.content else None
 

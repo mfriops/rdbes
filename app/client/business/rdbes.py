@@ -3,6 +3,7 @@
 
 import os, json
 import pandas as pd
+import io, csv
 from typing import Any, Dict
 from flask import jsonify
 from requests import HTTPError, Response
@@ -25,7 +26,7 @@ from app.client.rdbes.vessel_details import VesselDetails
 from app.client.rdbes.individual_species import IndividualSpecies
 from app.client.rdbes.species_list import SpeciesList
 from app.client.rdbes.frequency_measure import FrequencyMeasure
-from app.client.rdbes.biological_variables import BiologicalVariables
+from app.client.rdbes.biological_variable import BiologicalVariable
 from app.client.rdbes.commercial_landing import CommercialLanding
 from app.client.rdbes.commercial_effort import CommercialEffort
 from app.client.rdbes.harbour import Harbour
@@ -212,6 +213,8 @@ class RdbesBusiness:
             ]).dropna()
         )
         vesselDf = pd.DataFrame([VesselVessel(ves).dict() for ves in self.vessel_business.get_vessel(registration_nos)])
+        # TODO for now, delete non-icelandic vessels, include it maby later
+        vesselDf.drop(vesselDf[vesselDf['status'] != 'Á aðalskipaskrá'].index, inplace=True)
 
         # Merge with vessel on registration_no from sampleDf
         # TODO þarf líkleaa ekki þetta join nema kannski fyrir vessel_id, 7.10.2025 - ath. betur
@@ -502,29 +505,29 @@ class RdbesBusiness:
                 meas['measure'] = meas['length']
                 meas['measure_unit'] = 'Lengthmm'
                 meas['specimen_type'] = None
-                bv.append(BiologicalVariables(meas, 'LengthTotal').dict())
+                bv.append(BiologicalVariable(meas, 'LengthTotal').dict())
             if meas['measure_type'] == 'OTOL' and meas['length'] != None:
                 meas['measure'] = meas['length']
                 meas['measure_unit'] = 'Lengthmm'
                 meas['specimen_type'] = None
-                bv.append(BiologicalVariables(meas, 'LengthTotal').dict())
+                bv.append(BiologicalVariable(meas, 'LengthTotal').dict())
             if meas['measure_type'] == 'OTOL' and meas['weight'] != None:
                 meas['measure'] = meas['weight']
                 meas['measure_unit'] = 'Weightg'
                 meas['specimen_type'] = None
-                bv.append(BiologicalVariables(meas, 'WeightMeasured').dict())
+                bv.append(BiologicalVariable(meas, 'WeightMeasured').dict())
             if meas['measure_type'] == 'OTOL' and meas['age'] != None:
                 meas['measure'] = meas['age']
                 meas['measure_unit'] = 'Ageyear'
                 meas['specimen_type'] = 'otolith'
-                bv.append(BiologicalVariables(meas, 'Age').dict())
+                bv.append(BiologicalVariable(meas, 'Age').dict())
 
         biologicalVariableBV = pd.DataFrame(bv)
         measureDf['measure'] = None
         measureDf['measure_unit'] = None
         measureDf['specimen_type'] = None
         biologicalVariableBV = biologicalVariableBV.astype(object).where(pd.notna(biologicalVariableBV), None)
-        biologicalVariableReport = validate_dataframe(biologicalVariableBV, BiologicalVariables(measureDf.to_dict(orient='records')[0], 'LengthTotal').validate())
+        biologicalVariableReport = validate_dataframe(biologicalVariableBV, BiologicalVariable(measureDf.to_dict(orient='records')[0], 'LengthTotal').validate())
         if dict_error(biologicalVariableReport):
             errors = True
             errorsHtml['biological_variable_errors'] = generate_html_from_dict(biologicalVariableReport, 'Biological Variable')
@@ -565,9 +568,9 @@ class RdbesBusiness:
         for rec in sampleSA.to_dict('records'):
             sampleRes = self.insert('sample', rec)
 
-        # TODO constraint frequency_measure_measure_uk, tekinn tímabundið af
-        for rec in frequencyMeasureFM.to_dict('records'):
-            frequencyMeasureRes = self.insert('frequency_measure', rec)
+        # # TODO frequency measures not submitted, only individual biological variables like in the DB
+        # for rec in frequencyMeasureFM.to_dict('records'):
+        #     frequencyMeasureRes = self.insert('frequency_measure', rec)
 
         for rec in biologicalVariableBV.to_dict('records'):
             biologicalVariableRes = self.insert('biological_variable', rec)
@@ -930,56 +933,166 @@ class RdbesBusiness:
 
     def write_file(self, localid, file_type):
 
+        # Records read from DB
+        # Suppost tables
         vessel_details = self.select('vessel_details')
-        # species_list = self.select('species_list')
-        # individual_species = self.select('individual_species')
-        #
-        # design = self.select('design')
-        # sampling_details = self.select('sampling_details')
-        # fishing_trip = self.select('fishing_trip')
-        # fishing_operation = self.select('fishing_operation')
-        # species_selection = self.select('species_selection')
-        # sample = self.select('sample')
-        #
+        vessel_detailsDf = pd.DataFrame(vessel_details['rows'], columns=VesselDetails(None).columns())
+        species_list = self.select('species_list')
+        species_listDf = pd.DataFrame(species_list['rows'], columns=SpeciesList(None).columns())
+        individual_species = self.select('individual_species')
+        individual_speciesDf = pd.DataFrame(individual_species['rows'], columns=IndividualSpecies(None).columns())
+
+        # Upper Hierarchy
+        design = self.select('design')
+        designDf = pd.DataFrame(design['rows'], columns=Design(None).columns())
+
+        sampling_details = self.select('sampling_details')
+        sampling_detailsDf = pd.DataFrame(sampling_details['rows'], columns=SamplingDetails(True).columns())
+
+        fishing_trip = self.select('fishing_trip')
+        fishing_tripDf = pd.DataFrame(fishing_trip['rows'], columns=FishingTrip(None).columns())
+
+        fishing_operation = self.select('fishing_operation')
+        fishing_operationDf = pd.DataFrame(fishing_operation['rows'], columns=FishingOperation(None).columns())
+
+        species_selection = self.select('species_selection')
+        species_selectionDf = pd.DataFrame(species_selection['rows'], columns=SpeciesSelection(None).columns())
+
+        sample = self.select('sample')
+        sampleDf = pd.DataFrame(sample['rows'], columns=Sample(None).columns())
+
+        # Lower Hierarchy
         # sample = self.select('frequency_measure')
-        # sample = self.select('biological_variable')
+        biological_variable = self.select('biological_variable')
+        biological_variableDf = pd.DataFrame(biological_variable['rows'], columns=BiologicalVariable(None).columns())
 
         if file_type == 'csv':
-            return convert_to_csv(vessel_details)
+            return convert_to_csv(vessel_detailsDf,
+                                  species_listDf,
+                                  individual_speciesDf,
+                                  designDf,
+                                  sampling_detailsDf,
+                                  fishing_tripDf,
+                                  fishing_operationDf,
+                                  species_selectionDf,
+                                  sampleDf,
+                                  biological_variableDf)
         elif file_type == 'xml':
-            return convert_to_xml(vessel_details)
+            return convert_to_xml(designDf,
+                                  vessel_details,
+                                  sampling_detailsDf,
+                                  fishing_tripDf,
+                                  fishing_operationDf,
+                                  species_selectionDf,
+                                  sampleDf,
+                                  biological_variableDf)
 
 
-def convert_to_csv(vessel_details: dict):
+def convert_to_csv( vessel_detailsDf: pd.DataFrame,
+                    species_listDf: pd.DataFrame,
+                    individual_speciesDf: pd.DataFrame,
+                    designDf: pd.DataFrame,
+                    sampling_detailsDf: pd.DataFrame,
+                    fishing_tripDf: pd.DataFrame,
+                    fishing_operationDf: pd.DataFrame,
+                    species_selectionDf: pd.DataFrame,
+                    sampleDf: pd.DataFrame,
+                    biological_variableDf: pd.DataFrame,
+                ) -> str:
+    """
+    Writes a CSV (returned as string) with:
+      1) Three non-hierarchical tables first: vessel_detailsDf, species_listDf, individual_speciesDf
+      2) Then hierarchical, depth-first:
+         designDf → sampling_detailsDf → fishing_tripDf → fishing_operationDf
+                  → species_selectionDf → sampleDf → biological_variableDf
 
-    vesselDetailDf = pd.DataFrame(vessel_details)
-    # df_cruise = pd.DataFrame(vessel_details)
-    # # Column, not used
-    # del df_cruise['cruise_id']
-    # df_cruise.columns = cruise_csv_fields()
-    #
-    # df_haul = pd.DataFrame(haul.json())
-    # df_haul.columns = haul_csv_fields()
-    #
-    # df_catch = pd.DataFrame(catch.json())
-    # df_catch.columns = catch_csv_fields()
-    #
-    # df_biology = pd.DataFrame(biology.json())
-    # # New column, on hold
-    # del df_biology['GeneticPopulationCode']
-    # df_biology.columns = biology_csv_fields()
+    Rules:
+      - No header row
+      - For each DF, only output columns from the first '*recordtype' column onward
+        (columns before '*recordtype' are omitted)
+      - Each row only contains that DF's own columns (variable-length rows)
+    """
 
-    # return (df_cruise.to_csv(index=False, sep=',', decimal='.', encoding='utf-8') +
-    #        df_haul.to_csv(index=False, sep=',', decimal='.', encoding='utf-8') +
-    #        df_catch.to_csv(index=False, sep=',', decimal='.', encoding='utf-8') +
-    #        df_biology.to_csv(index=False, sep=',', decimal='.', encoding='utf-8'))
+    # Helper: compute the per-DF column slice starting at '*recordtype'
+    def cols_from_recordtype(df: pd.DataFrame):
+        cols = list(df.columns)
+        idx = next((i for i, c in enumerate(cols) if str(c).lower().endswith("recordtype")), None)
+        if idx is None:
+            raise ValueError("No '*recordtype' column found (name must end with 'recordtype').")
+        return cols[idx:]  # keep from '*recordtype' to the end (inclusive)
 
-    return (vesselDetailDf.to_csv(index=False, sep=',', decimal='.', encoding='utf-8'))
+    # Precompute kept columns for every DF
+    keep_vessel_details      = cols_from_recordtype(vessel_detailsDf)
+    keep_species_list        = cols_from_recordtype(species_listDf)
+    keep_individual_species  = cols_from_recordtype(individual_speciesDf)
 
+    keep_design              = cols_from_recordtype(designDf)
+    keep_sampling_details    = cols_from_recordtype(sampling_detailsDf)
+    keep_fishing_trip        = cols_from_recordtype(fishing_tripDf)
+    keep_fishing_operation   = cols_from_recordtype(fishing_operationDf)
+    keep_species_selection   = cols_from_recordtype(species_selectionDf)
+    keep_sample              = cols_from_recordtype(sampleDf)
+    keep_biological_variable = cols_from_recordtype(biological_variableDf)
 
-def convert_to_xml(vessel_details):
+    # Group children for hierarchy (use original DFs that still have parent ids)
+    sd_by_deid = {k: g for k, g in sampling_detailsDf.groupby("deid", sort=False)}
+    ft_by_sdid = {k: g for k, g in fishing_tripDf.groupby("sdid", sort=False)}
+    fo_by_ftid = {k: g for k, g in fishing_operationDf.groupby("ftid", sort=False)}
+    ss_by_foid = {k: g for k, g in species_selectionDf.groupby("foid", sort=False)}
+    sa_by_ssid = {k: g for k, g in sampleDf.groupby("ssid", sort=False)}
+    bv_by_said = {k: g for k, g in biological_variableDf.groupby("said", sort=False)}
 
-    vesselDetailDf = pd.DataFrame(vessel_details)
+    out = io.StringIO()
+    writer = csv.writer(out, lineterminator="\n", quoting=csv.QUOTE_MINIMAL)
+
+    def write_row(series: pd.Series, keep_cols):
+        vals = [series.get(c, None) for c in keep_cols]
+        writer.writerow(["" if pd.isna(v) else v for v in vals])
+
+    # --- 1) Non-hierarchical blocks first (as-is order) ---
+    for _, r in vessel_detailsDf.iterrows():
+        write_row(r, keep_vessel_details)
+
+    for _, r in species_listDf.iterrows():
+        write_row(r, keep_species_list)
+
+    for _, r in individual_speciesDf.iterrows():
+        write_row(r, keep_individual_species)
+
+    # --- 2) Hierarchical, depth-first ---
+    for i_d, d in designDf.iterrows():
+        write_row(d, keep_design)
+
+        for i_sd, sd in sd_by_deid.get(d["deid"], pd.DataFrame()).iterrows():
+            write_row(sd, keep_sampling_details)
+
+            for i_ft, ft in ft_by_sdid.get(sd["sdid"], pd.DataFrame()).iterrows():
+                write_row(ft, keep_fishing_trip)
+
+                for i_fo, fo in fo_by_ftid.get(ft["ftid"], pd.DataFrame()).iterrows():
+                    write_row(fo, keep_fishing_operation)
+
+                    for i_ss, ss in ss_by_foid.get(fo["foid"], pd.DataFrame()).iterrows():
+                        write_row(ss, keep_species_selection)
+
+                        for i_sa, sa in sa_by_ssid.get(ss["ssid"], pd.DataFrame()).iterrows():
+                            write_row(sa, keep_sample)
+
+                            for i_bv, bv in bv_by_said.get(sa["said"], pd.DataFrame()).iterrows():
+                                write_row(bv, keep_biological_variable)
+
+    return out.getvalue()
+
+def convert_to_xml( designDf,
+                    sampling_detailsDf,
+                    fishing_tripDf,
+                    fishing_operationDf,
+                    species_selectionDf,
+                    sampleDf,
+                    biological_variableDf,
+                  ):
+
+    # vesselDetailDf = pd.DataFrame(vessel_details)
     # df_cruise = pd.DataFrame([cruise.json()])
     # df_haul = pd.DataFrame(haul.json())
     # df_catch = pd.DataFrame(catch.json())
@@ -1030,9 +1143,6 @@ def agesource(age: int, otolith_type: str) -> str:
             return None
     else:
         return None
-
-
-
 
 
 def validate_dataframe(df: pd.DataFrame, schema: list):

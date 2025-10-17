@@ -6,7 +6,15 @@ import pandas as pd
 class FrequencyMeasure:
     FMrecordType = 'FM'
 
-    def __init__(self, freq: dict):
+    def __init__(self, freq: dict | None = None):
+
+        """Initialize from a sample dict, or create an empty instance."""
+        if freq is None:
+            # create an empty instance (all attributes None)
+            for spec in self.validate():
+                setattr(self, spec["name"], None)
+            return
+
         self.FMid = None
         self.SAid = freq['sample_id']
         self.FMstateOfProcessing = 'DEF'
@@ -22,8 +30,6 @@ class FrequencyMeasure:
         self.FMsampler = None
         self.FMaddGrpMeasurement = None
         self.FMaddGrpMeasurementType = None
-
-
 
     def dict(self) -> dict:
         fm = {}
@@ -45,10 +51,13 @@ class FrequencyMeasure:
         fm['FMaddGrpMeasurementType'] = self.FMaddGrpMeasurementType
         return fm
 
+    def columns(self) -> list[str]:
+        """Return all column names in the same order as dict()."""
+        return list(map(str.lower, self.dict().keys()))
+
     def pand(self) -> pd.DataFrame:
         # return self.dict()
         return pd.DataFrame([self.dict()])
-
 
     def validate(self):
         return [
@@ -69,4 +78,3 @@ class FrequencyMeasure:
             {"name": 'FMaddGrpMeasurement',            "dtype": "float", "not_null": False},
             {"name": 'FMaddGrpMeasurementType',        "dtype": "str", "not_null": False, "allowed_values": ["Age", "Berried", "ForkLength", "GeneticPopulation", "HatchSeason", "IlliciumCollected", "InfoConversionFactor", "InfoGenetic", "InfoGonad", "InfoLiver", "InfoOtolithMorphometrics", "InfoParasite", "InfoStomach", "InfoTagging", "LengthCarapace", "LengthLowerJawFork", "LengthMantle", "LengthMaximumShell", "LengthPinchedTail", "LengthPreAnal", "LengthPreCaudal", "LengthStandard", "LengthTail", "LengthTotal", "LengthWingSpan", "Maturity", "OtolithCollected", "ScaleCollected", "Sex", "SpecimenState", "Stock", "VertebraCount", "WeightGutted", "WeightLive", "WeightMeasured", "WidthCarapace", "WidthMaximumShell"]},
         ]
-

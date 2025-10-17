@@ -8,14 +8,21 @@ from app.client.api.misc import get_country, get_organisation
 class SpeciesList:
     SLrecordType = 'SL'
 
-    def __init__(self, species: dict):
+    def __init__(self, species: dict | None = None):
+
+        """Initialize from a sample dict, or create an empty instance."""
+        if species is None:
+            # create an empty instance (all attributes None)
+            for spec in self.validate():
+                setattr(self, spec["name"], None)
+            return
+
         self.SLid = None
         self.SLcountry = get_country()
         self.SLinstitute = get_organisation()
         self.SLspeciesListName = species['name']
         self.SLyear = species['year']
         self.SLcatchFraction = 'Catch'
-
 
     def dict(self) -> dict:
         sl = {}
@@ -28,11 +35,13 @@ class SpeciesList:
         sl['SLcatchFraction'] = self.SLcatchFraction
         return sl
 
+    def columns(self) -> list[str]:
+        """Return all column names in the same order as dict()."""
+        return list(map(str.lower, self.dict().keys()))
 
     def pand(self) -> pd.DataFrame:
         # return self.dict()
         return pd.DataFrame([self.dict()])
-
 
     def validate(self):
         return [

@@ -6,7 +6,15 @@ import pandas as pd
 class FishingTrip:
     FTrecordType = 'FT'
 
-    def __init__(self, sample):
+    def __init__(self, sample: dict | None = None):
+
+        """Initialize from a sample dict, or create an empty instance."""
+        if sample is None:
+            # create an empty instance (all attributes None)
+            for spec in self.validate():
+                setattr(self, spec["name"], None)
+            return
+
         self.FTid = sample['fishing_trip_id']
         self.OSid = None
         self.VSid = None
@@ -48,7 +56,6 @@ class FishingTrip:
         self.FTauxiliaryVariableValue = None
         self.FTauxiliaryVariableName = None
         self.FTauxiliaryVariableUnit = None
-
 
     def dict(self) -> dict:
         ft = {}
@@ -96,10 +103,13 @@ class FishingTrip:
         ft['FTauxiliaryVariableUnit'] = self.FTauxiliaryVariableUnit
         return ft
 
+    def columns(self) -> list[str]:
+        """Return all column names in the same order as dict()."""
+        return list(map(str.lower, self.dict().keys()))
+
     def pand(self) -> pd.DataFrame:
         # return self.dict()
         return pd.DataFrame([self.dict()])
-
 
     def validate(self):
         return [

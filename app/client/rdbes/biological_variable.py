@@ -3,10 +3,18 @@
 
 import pandas as pd
 
-class BiologicalVariables:
+class BiologicalVariable:
     BVrecordType = 'BV'
 
-    def __init__(self, meas: dict, meas_type: str):
+    def __init__(self, meas: dict |None = None, meas_type: str |None = None):
+
+        """Initialize from a sample dict, or create an empty instance."""
+        if meas is None:
+            # create an empty instance (all attributes None)
+            for spec in self.validate():
+                setattr(self, spec["name"], None)
+            return
+
         self.BVid = None
         self.SAid = meas['sample_id']
         self.FMid = None
@@ -32,7 +40,6 @@ class BiologicalVariables:
         self.BVselectionMethod = 'Unknown'
         self.BVunitName = None
         self.BVsampler = None
-
 
     def dict(self) -> dict:
         bv = {}
@@ -64,10 +71,13 @@ class BiologicalVariables:
         bv['BVsampler'] = self.BVsampler
         return bv
 
+    def columns(self) -> list[str]:
+        """Return all column names in the same order as dict()."""
+        return list(map(str.lower, self.dict().keys()))
+
     def pand(self) -> pd.DataFrame:
         # return self.dict()
         return pd.DataFrame([self.dict()])
-
 
     def validate(self):
         return [
@@ -98,4 +108,3 @@ class BiologicalVariables:
             {"name": 'BVunitName',                     "dtype": "str",    "not_null": True},
             {"name": 'BVsampler',                      "dtype": "str",    "not_null": False, "allowed_values": ["Control", "Imagery", "Observer", "SelfSampling"]},
         ]
-

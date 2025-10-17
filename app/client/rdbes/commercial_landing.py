@@ -6,7 +6,15 @@ import pandas as pd
 class CommercialLanding:
     CLrecordType = 'CL'
 
-    def __init__(self, land: dict):
+    def __init__(self, land: dict | None = None):
+
+        """Initialize from a sample dict, or create an empty instance."""
+        if land is None:
+            # create an empty instance (all attributes None)
+            for spec in self.validate():
+                setattr(self, spec["name"], None)
+            return
+
         self.CLcommercialLanding = None
         self.CLdataBasisOfScientificWeight = None
         self.CLdataSourceOfScientificWeight = None
@@ -68,8 +76,6 @@ class CommercialLanding:
         self.CLencryptedVesselIds = None
 
         self.CLlabel = None
-
-
 
     def dict(self) -> dict:
         cl = {}
@@ -137,6 +143,9 @@ class CommercialLanding:
         cl['CLlabel'] = self.CLlabel
         return cl
 
+    def columns(self) -> list[str]:
+        """Return all column names in the same order as dict()."""
+        return list(map(str.lower, self.dict().keys()))
 
     def pand(self) -> pd.DataFrame:
         # return self.dict()

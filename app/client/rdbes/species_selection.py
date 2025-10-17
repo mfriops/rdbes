@@ -6,7 +6,15 @@ import pandas as pd
 class SpeciesSelection:
     SSrecordType = 'SS'
 
-    def __init__(self, species: dict):
+    def __init__(self, species: dict | None = None):
+
+        """Initialize from a sample dict, or create an empty instance."""
+        if species is None:
+            # create an empty instance (all attributes None)
+            for spec in self.validate():
+                setattr(self, spec["name"], None)
+            return
+
         self.SSid = species['sample_id']
         self.LEid = None
         self.FOid = species['fishing_station_id']
@@ -47,7 +55,6 @@ class SpeciesSelection:
         self.SSauxiliaryVariableValue = None
         self.SSauxiliaryVariableName = None
         self.SSauxiliaryVariableUnit = None
-
 
     def dict(self) -> dict:
         ss = {}
@@ -94,10 +101,13 @@ class SpeciesSelection:
         ss['SSauxiliaryVariableUnit'] = self.SSauxiliaryVariableUnit
         return ss
 
+    def columns(self) -> list[str]:
+        """Return all column names in the same order as dict()."""
+        return list(map(str.lower, self.dict().keys()))
+
     def pand(self) -> pd.DataFrame:
         # return self.dict()
         return pd.DataFrame([self.dict()])
-
 
     def validate(self):
         return [

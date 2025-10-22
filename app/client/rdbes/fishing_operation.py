@@ -20,7 +20,7 @@ class FishingOperation:
         self.FTid = sample['fishing_trip_id']
         self.SDid = None
         self.FOstratification = 'N'
-        self.FOsequenceNumber = sample['fishing_station_id'] if sample['fishing_station_id'] != None else None
+        self.FOsequenceNumber = sample['sequence']
         self.FOstratumName = 'U'
         self.FOclustering = 'N'
         self.FOclusterName = 'U'

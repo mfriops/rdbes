@@ -22,7 +22,7 @@ class SpeciesSelection:
         self.OSid = None
         self.TEid = None
         self.SLid = None
-        self.SSsequenceNumber = None
+        self.SSsequenceNumber = species['sequence']
         self.SSstratification = 'N'
         self.SSstratumName = 'U'
         self.SSclustering = 'N'

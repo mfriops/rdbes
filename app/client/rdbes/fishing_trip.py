@@ -23,7 +23,7 @@ class FishingTrip:
         self.FOid = None
         self.TEid = None
         self.FTencryptedVesselCode = sample['vessel_id']
-        self.FTsequenceNumber = sample['sequence_no']
+        self.FTsequenceNumber = sample['sequence']
         self.FTstratification = 'N'
         self.FTstratumName = 'U'
         self.FTclustering = 'N'

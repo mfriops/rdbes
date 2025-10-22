@@ -17,11 +17,11 @@ class Sample:
 
         self.SAid = sample['sample_id']
         self.SSid = sample['sample_id']
-        self.SAsequenceNumber = None   # Needs to be fixed later to sequence_no
+        self.SAsequenceNumber = sample['sequence']
         self.SAparentSequenceNumber = None
         self.SAstratification = 'N'
         self.SAstratumName = 'U'
-        self.SAspeciesCode = sample['species_no']   # Needs to be fixed later to worms_id
+        self.SAspeciesCode = sample['worms_id']
         self.SAspeciesCodeFAO = None
         self.SAstateOfProcessing = 'DEF'
         self.SApresentation = 'WHL'

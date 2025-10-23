@@ -58,7 +58,7 @@ class CommercialLanding:
         self.CLofficialWeight = land['weight']
         self.CLscientificWeight = None
         self.CLexplainDifference = None
-        self.CLtotalOfficialLandingsValue = None
+        self.CLlandingsValue = None
         self.CLtotalNumberFish = None
         self.CLnumberOfUniqueVessels = None
         self.CLscientificWeightErrorMeasureValueType = None
@@ -123,7 +123,7 @@ class CommercialLanding:
         cl['CLofficialWeight'] = self.CLofficialWeight
         cl['CLscientificWeight'] = self.CLscientificWeight
         cl['CLexplainDifference'] = self.CLexplainDifference
-        cl['CLtotalOfficialLandingsValue'] = self.CLtotalOfficialLandingsValue
+        cl['CLlandingsValue'] = self.CLlandingsValue
         cl['CLtotalNumberFish'] = self.CLtotalNumberFish
         cl['CLnumberOfUniqueVessels'] = self.CLnumberOfUniqueVessels
         cl['CLscientificWeightErrorMeasureValueType'] = self.CLscientificWeightErrorMeasureValueType
@@ -198,7 +198,7 @@ class CommercialLanding:
             {"name": 'CLofficialWeight',                           "dtype": "float", "not_null": True, "range": (0, 2000000000)},
             {"name": 'CLscientificWeight',                         "dtype": "float", "not_null": True, "range": (0, 2000000000)},
             {"name": 'CLexplainDifference',                        "dtype": "str", "not_null": True, "allowed_values": ["CL"]},
-            {"name": 'CLtotalOfficialLandingsValue',               "dtype": "float", "not_null": True, "range": (1, 100000000)},
+            {"name": 'CLlandingsValue',                            "dtype": "str", "not_null": True, "range": (1, 100000000)},
             {"name": 'CLtotalNumberFish',                          "dtype": "int", "not_null": False, "range": (1, 100000)},
             {"name": 'CLnumberOfUniqueVessels',                    "dtype": "int", "not_null": True, "range": (1, 100000)},
             {"name": 'CLscientificWeightErrorMeasureValueType',    "dtype": "str", "not_null": False, "allowed_values": ["CL"]},

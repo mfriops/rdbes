@@ -19,14 +19,23 @@ class VesselDetails:
         self.VDid = None
         self.VDencryptedVesselCode = vessel['vessel_id']
         self.VDyear = vessel['year']
-        self.VDcountry = 'IS' if vessel['status'] == 'Á aðalskipaskrá' else 'XX'
+        self.VDcountry = 'IS'
         self.VDhomePort = vessel['home_harbour']
-        self.VDflagCountry = 'IS' if vessel['status'] == 'Á aðalskipaskrá' else 'XX'
+        self.VDflagCountry = 'IS' if vessel['status'] in ('Á aðalskipaskrá','Afmáð') else None
         self.VDlength = round(float(vessel['length'])) if vessel['length'] != None else None
         self.VDlengthCategory = vessel_length_category(float(vessel['length'])) if vessel['length'] != None else None
         self.VDpower = round(float(vessel['power_kw'])) if vessel['power_kw'] != None else None
         self.VDtonnage = round(float(vessel['brutto_weight_tons'])) if vessel['brutto_weight_tons'] is not None else None
         self.VDtonUnit = 'GRT'
+
+        if  vessel['registration_no'] == 3865:  # https://www.balticshipping.com/vessel/imo/9266255
+            self.VDencryptedVesselCode = 999901084
+            self.VDflagCountry = 'GL'
+            self.VDlength = 84
+            self.VDlengthCategory = vessel_length_category(84)
+            self.VDpower = None
+            self.VDhomePort = 'GLAGM'
+            self.VDtonnage =  3047
 
     def dict(self) -> dict:
         vd = {}

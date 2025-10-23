@@ -46,8 +46,8 @@ class FishingOperation:
         self.FOfisheriesManagementUnit = None
         self.FOgsaSubarea = 'NotApplicable'
         self.FOjurisdictionArea = None
-        self.FOgeographicalDataBasis = 'Measured'
-        self.FOgeographicalSource = 'PosDat'
+        self.FOgeographicalDataBasis = 'Official'
+        self.FOgeographicalSource = 'Logb'
         self.FOfishingDepth = None
         self.FOwaterDepth = None
         self.FOnationalFishingActivity = None

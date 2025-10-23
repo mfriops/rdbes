@@ -15,9 +15,9 @@ class AdbTargetStationAssemblage:
         self.fishing_start = trip['fishing_start']
         self.fishing_end = trip['fishing_end']
         self.latitude = geoconvert(trip['latitude'])
-        self.longitude = np.sign(int(trip['longitude']))*geoconvert(abs(int(trip['longitude'])))
+        self.longitude = (-1)*np.sign(trip['longitude'])*geoconvert(abs(trip['longitude']))
         self.latitude_end = geoconvert(trip['latitude_end'])
-        self.longitude_end = np.sign(int(trip['longitude_end']))*geoconvert(abs(int(trip['longitude_end'])))
+        self.longitude_end = (-1)*np.sign(trip['longitude_end'])*geoconvert(abs(trip['longitude_end']))
         self.species_no = trip['species_no']
         self.quantity = trip['quantity']
 

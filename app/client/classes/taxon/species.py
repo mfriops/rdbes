@@ -7,7 +7,7 @@ class TaxonSpecies:
 
     def __init__(self, species: dict):
         self.species_no = species['species_no']
-        self.worms_id = species['worms_id']
+        self.worms_id = int(species['worms_id'])
         self.code_3a = species['code_3a']
         self.name = species['name']
         self.eng_name = species['eng_name']

@@ -143,17 +143,10 @@ class RdbesBusiness:
         return channelStationDf
 
 
-    def write_sample(self, cruiseDict):
+    def write_sample(self, cruiseDict, year, target_species_no):
 
         errors = False
         errorsHtml = {}
-
-        # cruiseDict contains now all sample-cruises
-        target_species_no = 36
-        for cru in cruiseDict:
-            year = cru['cruise'][-4:]
-            cru['year'] = year
-            cru['target_species_no'] = target_species_no
 
         ##
         ## The population
@@ -214,7 +207,7 @@ class RdbesBusiness:
         )
         vesselDf = pd.DataFrame([VesselVessel(ves).dict() for ves in self.vessel_business.get_vessel(registration_nos)])
         # TODO for now, delete non-icelandic vessels, include it maby later
-        vesselDf.drop(vesselDf[vesselDf['status'] != 'Á aðalskipaskrá'].index, inplace=True)
+        # vesselDf.drop(vesselDf[vesselDf['status'] != 'Á aðalskipaskrá'].index, inplace=True)
 
         # Merge with vessel on registration_no from sampleDf
         # TODO þarf líkleaa ekki þetta join nema kannski fyrir vessel_id, 7.10.2025 - ath. betur
@@ -286,8 +279,10 @@ class RdbesBusiness:
             ['fishing_trip_id', 'fishing_station_id', 'fishing_gear_no', 'fishing_start', 'fishing_end', 'latitude', 'longitude', 'latitude_end', 'longitude_end', 'mesh_size']
             ].rename(columns={'latitude':'tow_latitude','latitude_end':'tow_latitude_end','longitude':'tow_longitude','longitude_end':'tow_longitude_end'})
             , on='fishing_trip_id', how='inner')
-        channelStationSampleDf['mesh_size'] = channelStationSampleDf['mesh_size'].astype('Int64')
-        channelStationSampleDf['fishing_gear_no'] = channelStationSampleDf['fishing_gear_no'].astype('Int64')
+        channelStationSampleDf = channelStationSampleDf.astype({
+            'mesh_size': 'Int64',
+            'fishing_gear_no': 'Int64'
+            })
 
         # Find the nearest station to sample time and location
         channelStationSampleDf = match_closest_station(channelStationSampleDf, time_weight=0.5)
@@ -297,8 +292,11 @@ class RdbesBusiness:
         # TODO sko það þarf að taka eitt tripDf fyrir allar ferðirnar því það geta verið fleri en eitt sample per trip, en það er það ekki í MAKR-2024
         sampleDf = channelStationSampleDf[(channelStationSampleDf['scaled_score'] == 1.0) | (channelStationSampleDf['scaled_score'].isna())]
 
+
         # Merge with gear on isscfg_no from sampleDf
         sampleDf = sampleDf.merge(fishingGearDf[['fishing_gear_no','fao_gear_code']], on='fishing_gear_no', how='left')
+        sampleDf['sequence'] = sampleDf.groupby('fishing_trip_id')['station_id'].rank(method='first').astype(int)
+        # sampleDf['sequence'] = sampleDf.sort_values('fishing_trip_id')['station_id'].rank(method='first').astype(int)
 
         # One get for each combination of area, stand_no, target species and mesh size
         metierDf = sampleDf[['area','fao_gear_code','target_assemblage','mesh_size']]
@@ -350,7 +348,7 @@ class RdbesBusiness:
         populationSampleDf = populationSampleDf.astype(object).where(pd.notna(populationSampleDf), None)
 
         # Add sequence No to the Df
-        populationSampleDf['sequence_no'] = populationSampleDf.sort_values('departure_date').reset_index().index + 1
+        populationSampleDf['sequence'] = populationSampleDf.sort_values('departure_date').reset_index().index + 1
         populationSampleDf['total_numer'] = len(populationSampleDf)
         populationSampleDf['sampled_numer'] = populationSampleDf['sample_id'].notna().sum()
 
@@ -385,6 +383,10 @@ class RdbesBusiness:
 
         # vessel Details record for all vessels sampled from
         vesselDetailsVD = pd.DataFrame([VesselDetails(ves).dict() for ves in vesselDf.to_dict(orient='records')])
+        vesselDetailsVD['VDpower'] = vesselDetailsVD['VDpower'].astype(object).where(
+            vesselDetailsVD['VDpower'].notna(),
+            None
+        )
         vesselDetailsReport = validate_dataframe(vesselDetailsVD, VesselDetails(vesselDf.to_dict(orient='records')[0]).validate())
         if dict_error(vesselDetailsReport):
             errors = True
@@ -425,19 +427,17 @@ class RdbesBusiness:
 
         # Species Selection / All Species sampled in this Sample Design
         # TODO Sýnist hér þurfa færslu fyrir þær tegundir sem sýni er tekið af
-
+        # TODO Sýnist ekki þurfa að gruppa á fishing_station_id hér, nægilegt að hafa sampla_id
         sampleMeasureUqDf = pd.DataFrame(pd.merge(sampleDf, measureDf.loc[measureDf['species_no']
                                                   .notnull()], on='sample_id')
                                          .drop_duplicates(subset=['fishing_station_id', 'sample_id', 'species_no'])[['fishing_station_id', 'sample_id', 'species_no']]
                                          .to_dict('records'))
         sampleMeasureUqDf = sampleMeasureUqDf.merge(taxonSpeciesDf, on='species_no', how='left')
+        sampleMeasureUqDf['sequence'] = sampleMeasureUqDf.groupby(['fishing_station_id', 'sample_id'])['species_no'].rank(method='first').astype(int)
 
         speciesSelectionSS = pd.DataFrame([SpeciesSelection(tax).dict() for tax in sampleMeasureUqDf.to_dict(orient='records')])
-        speciesSelectionSS['seq_no'] = speciesSelectionSS.groupby(['FOid']).cumcount()+1
         # Nan to None
         speciesSelectionSS = speciesSelectionSS.astype(object).where(pd.notna(speciesSelectionSS), None)
-        speciesSelectionSS['SSsequenceNumber'] = speciesSelectionSS['seq_no']
-        speciesSelectionSS.drop('seq_no', axis=1, inplace=True)
         speciesSelectionReport = validate_dataframe(speciesSelectionSS, SpeciesSelection(sampleMeasureUqDf.to_dict(orient='records')[0]).validate())
         if dict_error(speciesSelectionReport):
             errors = True
@@ -448,16 +448,18 @@ class RdbesBusiness:
         # TODO Færsla fyrir hvert sýni sem er tekið
 
         # sampleMeasureSexUq = pd.merge(sampleDf, measureDf.loc[measureDf['species_no'].notnull()], on='sample_id').drop_duplicates(subset=['sample_id', 'species_no','sex_no'])[['sample_id', 'species_no','sex_no']].to_dict('records')
-        sampleMeasureSexUq = pd.merge(sampleDf, measureDf.loc[measureDf['species_no'].notnull()], on='sample_id').drop_duplicates(subset=['sample_id', 'species_no'])[['sample_id', 'species_no']].to_dict('records')
-
-        sampleSA = pd.DataFrame([Sample(sam).dict() for sam in sampleMeasureSexUq])
-        sampleSA['seq_no'] = sampleSA.groupby(['SSid']).cumcount()+1
+        sampleMeasureSexUqDf = pd.merge(sampleDf, measureDf.loc[measureDf['species_no'].notnull()], on='sample_id').drop_duplicates(subset=['sample_id', 'species_no'])[['sample_id', 'species_no', 'worms_id']]
+        # sampleMeasureSexUqDf['sequence'] = sampleMeasureSexUqDf.groupby('sample_id')['species_no'].rank(method='first').astype(int)
+        sampleMeasureSexUqDf['sequence'] = (
+                sampleMeasureSexUqDf.sort_values(['sample_id', 'species_no'])
+                .reset_index(drop=True)
+                .index + 1
+        )
+        sampleSA = pd.DataFrame([Sample(sam).dict() for sam in sampleMeasureSexUqDf.to_dict('records')])
         # Nan to None
         sampleSA = sampleSA.astype(object).where(pd.notna(sampleSA), None)
-        sampleSA['SAsequenceNumber'] = sampleSA['seq_no']
-        sampleSA.drop('seq_no', axis=1, inplace=True)
 
-        sampleReport = validate_dataframe(sampleSA, Sample(sampleMeasureSexUq[0]).validate())
+        sampleReport = validate_dataframe(sampleSA, Sample(sampleMeasureSexUqDf.to_dict(orient='records')[0]).validate())
         if dict_error(sampleReport):
             errors = True
             errorsHtml['sample_errors'] = generate_html_from_dict(sampleReport, 'Sample Validation')
@@ -572,6 +574,7 @@ class RdbesBusiness:
         # for rec in frequencyMeasureFM.to_dict('records'):
         #     frequencyMeasureRes = self.insert('frequency_measure', rec)
 
+        # TODO - comment out because of time
         for rec in biologicalVariableBV.to_dict('records'):
             biologicalVariableRes = self.insert('biological_variable', rec)
 
@@ -931,40 +934,44 @@ class RdbesBusiness:
 
 
 
-    def write_file(self, localid, file_type):
+    def write_file(self, file_name, file_type):
 
         # Records read from DB
         # Suppost tables
         vessel_details = self.select('vessel_details')
-        vessel_detailsDf = pd.DataFrame(vessel_details['rows'], columns=VesselDetails(None).columns())
+        vessel_detailsDf = pd.DataFrame(vessel_details, columns=VesselDetails(None).columns())
         species_list = self.select('species_list')
-        species_listDf = pd.DataFrame(species_list['rows'], columns=SpeciesList(None).columns())
+        species_listDf = pd.DataFrame(species_list, columns=SpeciesList(None).columns())
         individual_species = self.select('individual_species')
-        individual_speciesDf = pd.DataFrame(individual_species['rows'], columns=IndividualSpecies(None).columns())
+        individual_speciesDf = pd.DataFrame(individual_species, columns=IndividualSpecies(None).columns())
 
         # Upper Hierarchy
         design = self.select('design')
-        designDf = pd.DataFrame(design['rows'], columns=Design(None).columns())
+        designDf = pd.DataFrame(design, columns=Design(None).columns())
 
         sampling_details = self.select('sampling_details')
-        sampling_detailsDf = pd.DataFrame(sampling_details['rows'], columns=SamplingDetails(True).columns())
+        sampling_detailsDf = pd.DataFrame(sampling_details, columns=SamplingDetails(True).columns())
 
         fishing_trip = self.select('fishing_trip')
-        fishing_tripDf = pd.DataFrame(fishing_trip['rows'], columns=FishingTrip(None).columns())
+        fishing_tripDf = pd.DataFrame(fishing_trip, columns=FishingTrip(None).columns())
 
         fishing_operation = self.select('fishing_operation')
-        fishing_operationDf = pd.DataFrame(fishing_operation['rows'], columns=FishingOperation(None).columns())
+        fishing_operationDf = pd.DataFrame(fishing_operation, columns=FishingOperation(None).columns())
 
         species_selection = self.select('species_selection')
-        species_selectionDf = pd.DataFrame(species_selection['rows'], columns=SpeciesSelection(None).columns())
+        species_selectionDf = pd.DataFrame(species_selection, columns=SpeciesSelection(None).columns())
 
         sample = self.select('sample')
-        sampleDf = pd.DataFrame(sample['rows'], columns=Sample(None).columns())
+        sampleDf = pd.DataFrame(sample, columns=Sample(None).columns())
 
         # Lower Hierarchy
         # sample = self.select('frequency_measure')
         biological_variable = self.select('biological_variable')
-        biological_variableDf = pd.DataFrame(biological_variable['rows'], columns=BiologicalVariable(None).columns())
+        biological_variableDf = pd.DataFrame(biological_variable, columns=BiologicalVariable(None).columns())
+        biological_variableDf = biological_variableDf.astype({
+            'bvnumbertotal': 'Int64',
+            'bvnumbersampled': 'Int64'
+        })
 
         if file_type == 'csv':
             return convert_to_csv(vessel_detailsDf,
@@ -976,7 +983,8 @@ class RdbesBusiness:
                                   fishing_operationDf,
                                   species_selectionDf,
                                   sampleDf,
-                                  biological_variableDf)
+                                  biological_variableDf,
+                                  file_name)
         elif file_type == 'xml':
             return convert_to_xml(designDf,
                                   vessel_details,
@@ -988,53 +996,64 @@ class RdbesBusiness:
                                   biological_variableDf)
 
 
-def convert_to_csv( vessel_detailsDf: pd.DataFrame,
-                    species_listDf: pd.DataFrame,
-                    individual_speciesDf: pd.DataFrame,
-                    designDf: pd.DataFrame,
-                    sampling_detailsDf: pd.DataFrame,
-                    fishing_tripDf: pd.DataFrame,
-                    fishing_operationDf: pd.DataFrame,
-                    species_selectionDf: pd.DataFrame,
-                    sampleDf: pd.DataFrame,
-                    biological_variableDf: pd.DataFrame,
-                ) -> str:
-    """
-    Writes a CSV (returned as string) with:
-      1) Three non-hierarchical tables first: vessel_detailsDf, species_listDf, individual_speciesDf
-      2) Then hierarchical, depth-first:
-         designDf → sampling_detailsDf → fishing_tripDf → fishing_operationDf
-                  → species_selectionDf → sampleDf → biological_variableDf
+import pandas as pd
+import csv
 
-    Rules:
-      - No header row
-      - For each DF, only output columns from the first '*recordtype' column onward
-        (columns before '*recordtype' are omitted)
-      - Each row only contains that DF's own columns (variable-length rows)
+def convert_to_csv(
+    vessel_detailsDf: pd.DataFrame,
+    species_listDf: pd.DataFrame,
+    individual_speciesDf: pd.DataFrame,
+    designDf: pd.DataFrame,
+    sampling_detailsDf: pd.DataFrame,
+    fishing_tripDf: pd.DataFrame,
+    fishing_operationDf: pd.DataFrame,
+    species_selectionDf: pd.DataFrame,
+    sampleDf: pd.DataFrame,
+    biological_variableDf: pd.DataFrame,
+    file_name: str,  # base name for files; outputs: f"{name}_HVD.csv", f"{name}_HSL.csv", f"{name}_H2.csv"
+) -> None:
+    """
+    Writes three CSV files with no header. For each DF, only columns from the first
+    '*recordtype' column (case-insensitive, name endswith 'recordtype') to the end are written.
+    Earlier columns (like ids) are dropped from the output.
+
+    - {file_name}_HVD.csv: vessel_detailsDf
+    - {file_name}_HSL.csv: species_listDf then individual_speciesDf (stacked)
+    - {file_name}_H2.csv : hierarchical, depth-first:
+        designDf → sampling_detailsDf → fishing_tripDf → fishing_operationDf
+                 → species_selectionDf → sampleDf → biological_variableDf
     """
 
-    # Helper: compute the per-DF column slice starting at '*recordtype'
     def cols_from_recordtype(df: pd.DataFrame):
         cols = list(df.columns)
         idx = next((i for i, c in enumerate(cols) if str(c).lower().endswith("recordtype")), None)
         if idx is None:
             raise ValueError("No '*recordtype' column found (name must end with 'recordtype').")
-        return cols[idx:]  # keep from '*recordtype' to the end (inclusive)
+        return cols[idx:]
 
-    # Precompute kept columns for every DF
-    keep_vessel_details      = cols_from_recordtype(vessel_detailsDf)
-    keep_species_list        = cols_from_recordtype(species_listDf)
-    keep_individual_species  = cols_from_recordtype(individual_speciesDf)
+    def write_df_rows(writer, df: pd.DataFrame, keep_cols):
+        for _, row in df.iterrows():
+            vals = [row.get(c, None) for c in keep_cols]
+            writer.writerow(["" if pd.isna(v) else v for v in vals])
 
-    keep_design              = cols_from_recordtype(designDf)
-    keep_sampling_details    = cols_from_recordtype(sampling_detailsDf)
-    keep_fishing_trip        = cols_from_recordtype(fishing_tripDf)
-    keep_fishing_operation   = cols_from_recordtype(fishing_operationDf)
-    keep_species_selection   = cols_from_recordtype(species_selectionDf)
-    keep_sample              = cols_from_recordtype(sampleDf)
-    keep_biological_variable = cols_from_recordtype(biological_variableDf)
+    # ---------- HVD ----------
+    hvd_path = f"{file_name}_HVD.csv"
+    keep_vessel = cols_from_recordtype(vessel_detailsDf)
+    with open(hvd_path, "w", newline="", encoding="utf-8") as f:
+        hvd_writer = csv.writer(f, lineterminator="\n", quoting=csv.QUOTE_MINIMAL)
+        write_df_rows(hvd_writer, vessel_detailsDf, keep_vessel)
 
-    # Group children for hierarchy (use original DFs that still have parent ids)
+    # ---------- HSL (species_list then individual_species) ----------
+    hsl_path = f"{file_name}_HSL.csv"
+    keep_species_list       = cols_from_recordtype(species_listDf)
+    keep_individual_species = cols_from_recordtype(individual_speciesDf)
+    with open(hsl_path, "w", newline="", encoding="utf-8") as f:
+        hsl_writer = csv.writer(f, lineterminator="\n", quoting=csv.QUOTE_MINIMAL)
+        write_df_rows(hsl_writer, species_listDf, keep_species_list)
+        write_df_rows(hsl_writer, individual_speciesDf, keep_individual_species)
+
+    # ---------- H2 (hierarchical, depth-first) ----------
+    # group children using full DFs (with ids intact)
     sd_by_deid = {k: g for k, g in sampling_detailsDf.groupby("deid", sort=False)}
     ft_by_sdid = {k: g for k, g in fishing_tripDf.groupby("sdid", sort=False)}
     fo_by_ftid = {k: g for k, g in fishing_operationDf.groupby("ftid", sort=False)}
@@ -1042,46 +1061,42 @@ def convert_to_csv( vessel_detailsDf: pd.DataFrame,
     sa_by_ssid = {k: g for k, g in sampleDf.groupby("ssid", sort=False)}
     bv_by_said = {k: g for k, g in biological_variableDf.groupby("said", sort=False)}
 
-    out = io.StringIO()
-    writer = csv.writer(out, lineterminator="\n", quoting=csv.QUOTE_MINIMAL)
+    keep_design            = cols_from_recordtype(designDf)
+    keep_sampling_details  = cols_from_recordtype(sampling_detailsDf)
+    keep_fishing_trip      = cols_from_recordtype(fishing_tripDf)
+    keep_fishing_operation = cols_from_recordtype(fishing_operationDf)
+    keep_species_selection = cols_from_recordtype(species_selectionDf)
+    keep_sample            = cols_from_recordtype(sampleDf)
+    keep_biological_var    = cols_from_recordtype(biological_variableDf)
 
-    def write_row(series: pd.Series, keep_cols):
-        vals = [series.get(c, None) for c in keep_cols]
-        writer.writerow(["" if pd.isna(v) else v for v in vals])
+    h2_path = f"{file_name}_H2.csv"
+    with open(h2_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f, lineterminator="\n", quoting=csv.QUOTE_MINIMAL)
 
-    # --- 1) Non-hierarchical blocks first (as-is order) ---
-    for _, r in vessel_detailsDf.iterrows():
-        write_row(r, keep_vessel_details)
+        def write_row(series: pd.Series, keep_cols):
+            vals = [series.get(c, None) for c in keep_cols]
+            writer.writerow(["" if pd.isna(v) else v for v in vals])
 
-    for _, r in species_listDf.iterrows():
-        write_row(r, keep_species_list)
+        for _, d in designDf.iterrows():
+            write_row(d, keep_design)
 
-    for _, r in individual_speciesDf.iterrows():
-        write_row(r, keep_individual_species)
+            for _, sd in sd_by_deid.get(d["deid"], pd.DataFrame()).iterrows():
+                write_row(sd, keep_sampling_details)
 
-    # --- 2) Hierarchical, depth-first ---
-    for i_d, d in designDf.iterrows():
-        write_row(d, keep_design)
+                for _, ft in ft_by_sdid.get(sd["sdid"], pd.DataFrame()).iterrows():
+                    write_row(ft, keep_fishing_trip)
 
-        for i_sd, sd in sd_by_deid.get(d["deid"], pd.DataFrame()).iterrows():
-            write_row(sd, keep_sampling_details)
+                    for _, fo in fo_by_ftid.get(ft["ftid"], pd.DataFrame()).iterrows():
+                        write_row(fo, keep_fishing_operation)
 
-            for i_ft, ft in ft_by_sdid.get(sd["sdid"], pd.DataFrame()).iterrows():
-                write_row(ft, keep_fishing_trip)
+                        for _, ss in ss_by_foid.get(fo["foid"], pd.DataFrame()).iterrows():
+                            write_row(ss, keep_species_selection)
 
-                for i_fo, fo in fo_by_ftid.get(ft["ftid"], pd.DataFrame()).iterrows():
-                    write_row(fo, keep_fishing_operation)
+                            for _, sa in sa_by_ssid.get(ss["ssid"], pd.DataFrame()).iterrows():
+                                write_row(sa, keep_sample)
 
-                    for i_ss, ss in ss_by_foid.get(fo["foid"], pd.DataFrame()).iterrows():
-                        write_row(ss, keep_species_selection)
-
-                        for i_sa, sa in sa_by_ssid.get(ss["ssid"], pd.DataFrame()).iterrows():
-                            write_row(sa, keep_sample)
-
-                            for i_bv, bv in bv_by_said.get(sa["said"], pd.DataFrame()).iterrows():
-                                write_row(bv, keep_biological_variable)
-
-    return out.getvalue()
+                                for _, bv in bv_by_said.get(sa["said"], pd.DataFrame()).iterrows():
+                                    write_row(bv, keep_biological_var)
 
 def convert_to_xml( designDf,
                     sampling_detailsDf,

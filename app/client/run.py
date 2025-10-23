@@ -215,22 +215,23 @@ def create_app() -> Flask:
                     flash("Note: No action taken, cruise is missing!")
                     return render_template('sampling.html')
 
-                # If sample data for this cruise has been collencted, then stop
-                # if crise_existence(cruise) > 0 and action == 'Load':
-                #     flash(
-                #         'Note: No action taken, sampling data for cruise: ' + cruise + ', already loaded, use reload to overwrite!')
-                #     return render_template('sampling.html')
+                year = request.form['year']
+                if year == '':
+                    flash("Note: No action taken, year is missing!")
+                    return render_template('sampling.html')
 
-                # cruise_name = request.form['cruise']
-                # if cruise_name == '':
-                #     flash('Note: No action taken, cruise name is missing!!')
-                #     return render_template('content.html')
+                species_no = request.form['species']
+                if species_no == '':
+                    flash('Note: No action taken, species no. is missing!!')
+                    return render_template('sampling.html')
 
                 cruises = [p.strip() for p in cruise.split(',') if cruise.strip()]
                 cruiseDict = []
                 for cru in cruises:
                     cruiseInfo = channel_business.get_cruise(cru)
                     if not haskey(cruiseInfo,'Error'):
+                        cruiseInfo['year'] = year
+                        cruiseInfo['target_species_no'] = species_no
                         cruiseDict.append(cruiseInfo)
 
                 if cruiseDict == []:
@@ -242,7 +243,7 @@ def create_app() -> Flask:
                 #         flash('Rdbes data delete, unsuccessful!')
                 #         return render_template('content.html')
 
-                retSample = rdbes_business.write_sample(cruiseDict)
+                retSample = rdbes_business.write_sample(cruiseDict, year, species_no)
 
                 if retSample['return'] > -1:
                     flash('Sample data successfully uploaded!')
@@ -252,50 +253,29 @@ def create_app() -> Flask:
                     return render_template('errors.html', error_page_html=combine_errors(retSample[1]))
 
             elif request.form['input_button'] == 'Save csv':
-                localid = request.form['localid']
-                if localid == '':
-                    flash("Note: No action taken, localid must be stated!")
+                filename = request.form['filename']
+                if filename == '':
+                    flash("Note: No action taken, file name must be stated!")
                     return render_template('sampling.html')
                 if not rdbes_existence():
-                    flash("Note: No action taken, RDBES data for localid: " + localid + " are not loaded!")
+                    flash("Note: No action taken, RDBES data for ...: " + "..." + " are not loaded!")
                     return render_template('sampling.html')
 
                 # 1. Define your large content and desired filename here.
-                csv_data = rdbes_business.write_file(localid, 'csv')
-                filename = localid + '.csv'
-
-                # 2. Generate a unique ID and store the (filename, content) in our dictionary.
-                file_id = str(uuid.uuid4())  # e.g., 'b7b...-...'
-                download_store[file_id] = (filename, csv_data)
-
-                # 3. Provide a link in the HTML that references this unique ID.
-                #    The user just clicks the link to download the file.
-                return f"""
-                <!DOCTYPE html>
-                <html lang="en">
-                <head>
-                    <meta charset="UTF-8">
-                    <title>Download CSV File</title>
-                </head>
-                <body>
-                    <h3p>Filename: {filename}</h3>
-                    <a href="/download-file?file_id={file_id}">Download File</a>
-                </body>
-                </html>
-                """
+                rdbes_business.write_file(filename, 'csv')
 
             elif request.form['input_button'] == 'Save xlm':
-                localid = request.form['localid']
-                if localid == '':
-                    flash("Note: No action taken, localid must be stated!")
+                filename = request.form['filename']
+                if filename == '':
+                    flash("Note: No action taken, filename must be stated!")
                     return render_template('sampling.html')
                 if rdbes_existence() == 0:
-                    flash("Note: No action taken, RDBES data for localid: " + localid + " are not loaded!")
+                    flash("Note: No action taken, RDBES data for ...: " + "..." + " are not loaded!")
                     return render_template('sampling.html')
 
                 # 1. Define your large content and desired filename here.
-                xml_data = rdbes_business.write_file(localid, 'xml')
-                filename = localid + '.xml'
+                xml_data = rdbes_business.write_file(filename, 'xml')
+                filename = filename + '.xml'
 
                 # 2. Generate a unique ID and store the (filename, content) in our dictionary.
                 file_id = str(uuid.uuid4())  # e.g., 'b7b...-...'
